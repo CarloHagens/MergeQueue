@@ -1,4 +1,4 @@
-﻿namespace MergeQueue.Dtos
+﻿namespace MergeQueue.Entities
 {
     public static class SlackNumberEmojis
     {

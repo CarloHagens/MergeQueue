@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using MergeQueue.Builders;
 using MergeQueue.Dtos;
 using MergeQueue.Entities;
+using MergeQueue.Extensions;
 
 namespace MergeQueue.Controllers
 {
@@ -31,62 +33,40 @@ namespace MergeQueue.Controllers
         [HttpPost]
         public ActionResult Post([FromForm] SlackSlashRequestDto request)
         {
-            if (request.text != null && request.text.ToLowerInvariant() == "show")
+            if (request.GetCommand() == Commands.Show)
             {
                 var queuedPeople = _repository.GetUsersForChannel(request.channel_id);
                 if (queuedPeople.Count == 0)
                 {
-                    return Ok(CreateEphemeralResponseWithText("The queue is currently empty."));
+                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("The queue is currently empty."));
                 }
-                var queue = queuedPeople.Select((queuedPerson, index) =>
-                    CreateSectionWithText($"{SlackNumberEmojis.From(index + 1)} <@{queuedPerson.UserId}>")).ToList();
-                var response = new SlackSlashResponseDto
-                {
-                    ResponseType = SlackSlashResponseType.InChannel,
-                    Blocks = queue
-                };
+                var response = CreateShowQueueResponse(queuedPeople);
                 InvokeResponseUrl(request.response_url, response);
                 return Ok();
             }
 
-            if (request.text != null && request.text.ToLowerInvariant() == "join")
+            if (request.GetCommand() == Commands.Join)
             {
                 var wasUserAdded = _repository.AddUser(request.ToUser());
                 if (!wasUserAdded)
                 {
-                    return Ok(CreateEphemeralResponseWithText("You are already in the queue."));
+                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("You are already in the queue."));
                 }
-                var queuedUsers = _repository.GetUsersForChannel(request.channel_id);
-                var responseText = queuedUsers.Count == 1
-                    ? $"<@{request.user_id}> is now first in the queue!"
-                    : $"<@{request.user_id}> joined the queue.";
-                var response = CreateChannelResponseWithText(responseText);
+                var response = CreateJoinQueueResponse(request);
                 InvokeResponseUrl(request.response_url, response);
                 return Ok();
             }
 
-            if (request.text != null && request.text.ToLowerInvariant() == "leave")
+            if (request.GetCommand() == Commands.Leave)
             {
-                var responseText = $"<@{request.user_id}> left the queue.";
-                var queuedPeople = _repository.GetUsersForChannel(request.channel_id);
-                if (queuedPeople.Count > 0 && queuedPeople.First().UserId == request.user_id)
-                {
-                    if (queuedPeople.Count > 1)
-                    {
-                        responseText += $"\n<@{queuedPeople[1].UserId}> it is now your turn!";
-                    }
-                    else
-                    {
-                        responseText += " It is now empty.";
-                    }
-                }
+                var response = CreateLeaveQueueResponse(request);
+
                 var wasPersonRemoved = _repository.RemoveUser(request.ToUser());
                 if (!wasPersonRemoved)
                 {
-                    return Ok(CreateEphemeralResponseWithText("You are not in the queue."));
+                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("You are not in the queue."));
                 }
 
-                var response = CreateChannelResponseWithText(responseText);
                 InvokeResponseUrl(request.response_url, response);
                 return Ok();
             }
@@ -96,12 +76,54 @@ namespace MergeQueue.Controllers
                 ResponseType = SlackSlashResponseType.Ephemeral,
                 Blocks = new List<SlackSlashResponseBlock>
                     {
-                        CreateSectionWithText(":wave: Need some help with `/queue`?"),
-                        CreateSectionWithText("*Available commands*"),
-                        CreateSectionWithText(_queueCommands)
+                        SlackSlashResponseBuilder.CreateSectionWithText(":wave: Need some help with `/queue`?"),
+                        SlackSlashResponseBuilder.CreateSectionWithText("*Available commands*"),
+                        SlackSlashResponseBuilder.CreateSectionWithText(_queueCommands)
                     }
             };
             return Ok(response2);
+        }
+
+        private SlackSlashResponseDto CreateLeaveQueueResponse(SlackSlashRequestDto request)
+        {
+            var responseText = $"<@{request.user_id}> left the queue.";
+            var queuedPeople = _repository.GetUsersForChannel(request.channel_id);
+            if (queuedPeople.Count > 0 && queuedPeople.First().UserId == request.user_id)
+            {
+                if (queuedPeople.Count > 1)
+                {
+                    responseText += $"\n<@{queuedPeople[1].UserId}> it is now your turn!";
+                }
+                else
+                {
+                    responseText += " It is now empty.";
+                }
+            }
+
+            var response = SlackSlashResponseBuilder.CreateChannelResponseWithText(responseText);
+            return response;
+        }
+
+        private SlackSlashResponseDto CreateJoinQueueResponse(SlackSlashRequestDto request)
+        {
+            var queuedUsers = _repository.GetUsersForChannel(request.channel_id);
+            var responseText = queuedUsers.Count == 1
+                ? $"<@{request.user_id}> is now first in the queue!"
+                : $"<@{request.user_id}> joined the queue.";
+            var response = SlackSlashResponseBuilder.CreateChannelResponseWithText(responseText);
+            return response;
+        }
+
+        private SlackSlashResponseDto CreateShowQueueResponse(IEnumerable<User> queuedPeople)
+        {
+            var queue = queuedPeople.Select((queuedPerson, index) =>
+                SlackSlashResponseBuilder.CreateSectionWithText($"{SlackNumberEmojis.From(index + 1)} <@{queuedPerson.UserId}>")).ToList();
+            var response = new SlackSlashResponseDto
+            {
+                ResponseType = SlackSlashResponseType.InChannel,
+                Blocks = queue
+            };
+            return response;
         }
 
         private void InvokeResponseUrl(string responseUrl, object response)
@@ -111,37 +133,6 @@ namespace MergeQueue.Controllers
                 Content = new StringContent(JsonConvert.SerializeObject(response), Encoding.UTF8, "application/json")
             };
             _httpClient.Send(requestMessage);
-        }
-
-        private SlackSlashResponseBlock CreateSectionWithText(string text)
-        {
-            return new()
-            {
-                Type = SlackSlashResponseBlockType.Section,
-                Text = new SlackSlashResponseText
-                {
-                    Type = SlackSlashResponseTextType.Markdown,
-                    Text = text
-                }
-            };
-        }
-
-        private SlackSlashResponseDto CreateEphemeralResponseWithText(string text)
-        {
-            return new()
-            {
-                ResponseType = SlackSlashResponseType.Ephemeral,
-                Text = text
-            };
-        }
-
-        private SlackSlashResponseDto CreateChannelResponseWithText(string text)
-        {
-            return new()
-            {
-                ResponseType = SlackSlashResponseType.InChannel,
-                Text = text
-            };
         }
     }
 }
