@@ -3,12 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace MergeQueue.Dtos
 {
-    public class SlackSlashResponseDto
+    public class SlackViewDto
     {
-        [JsonPropertyName("response_type")]
-        public string ResponseType { get; set; }
-        [JsonPropertyName("text")]
-        public string Text { get; set; }
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+        [JsonPropertyName("submit_disabled")]
+        public bool SubmitDisabled { get; set; }
         [JsonPropertyName("blocks")]
         public IEnumerable<SlackBlockDto> Blocks { get; set; }
     }

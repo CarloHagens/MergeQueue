@@ -1,14 +1,15 @@
 ﻿using MergeQueue.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using MergeQueue.Builders;
 using MergeQueue.Dtos;
 using MergeQueue.Entities;
 using MergeQueue.Extensions;
+using MergeQueue.Types;
 
 namespace MergeQueue.Controllers
 {
@@ -73,8 +74,8 @@ namespace MergeQueue.Controllers
 
             var response2 = new SlackSlashResponseDto
             {
-                ResponseType = SlackSlashResponseType.Ephemeral,
-                Blocks = new List<SlackSlashResponseBlock>
+                ResponseType = SlackMessageType.Ephemeral,
+                Blocks = new List<SlackBlockDto>
                     {
                         SlackSlashResponseBuilder.CreateSectionWithText(":wave: Need some help with `/queue`?"),
                         SlackSlashResponseBuilder.CreateSectionWithText("*Available commands*"),
@@ -120,7 +121,7 @@ namespace MergeQueue.Controllers
                 SlackSlashResponseBuilder.CreateSectionWithText($"{SlackNumberEmojis.From(index + 1)} <@{queuedPerson.UserId}>")).ToList();
             var response = new SlackSlashResponseDto
             {
-                ResponseType = SlackSlashResponseType.InChannel,
+                ResponseType = SlackMessageType.InChannel,
                 Blocks = queue
             };
             return response;
@@ -130,7 +131,7 @@ namespace MergeQueue.Controllers
         {
             var requestMessage = new HttpRequestMessage(HttpMethod.Post, responseUrl)
             {
-                Content = new StringContent(JsonConvert.SerializeObject(response), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize(response), Encoding.UTF8, "application/json")
             };
             _httpClient.Send(requestMessage);
         }

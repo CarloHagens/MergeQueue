@@ -31,7 +31,8 @@
       "commandName": "Docker",
       "launchBrowser": true,
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger",
-      "publishAllPorts": true
+      "publishAllPorts": true,
+      "DockerfileRunArguments": "-p 46001:80 -e MongoDbSettings:Host=mongo --network=mergequeuenet "
     }
   }
 }

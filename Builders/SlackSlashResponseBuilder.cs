@@ -1,17 +1,18 @@
 ﻿using MergeQueue.Dtos;
+using MergeQueue.Types;
 
 namespace MergeQueue.Builders
 {
     public static class SlackSlashResponseBuilder
     {
-        public static SlackSlashResponseBlock CreateSectionWithText(string text)
+        public static SlackBlockDto CreateSectionWithText(string text)
         {
             return new()
             {
-                Type = SlackSlashResponseBlockType.Section,
-                Text = new SlackSlashResponseText
+                Type = SlackBlockType.Section,
+                Text = new SlackBlockTextDto
                 {
-                    Type = SlackSlashResponseTextType.Markdown,
+                    Type = SlackTextType.Markdown,
                     Text = text
                 }
             };
@@ -21,7 +22,7 @@ namespace MergeQueue.Builders
         {
             return new()
             {
-                ResponseType = SlackSlashResponseType.Ephemeral,
+                ResponseType = SlackMessageType.Ephemeral,
                 Text = text
             };
         }
@@ -30,7 +31,7 @@ namespace MergeQueue.Builders
         {
             return new()
             {
-                ResponseType = SlackSlashResponseType.InChannel,
+                ResponseType = SlackMessageType.InChannel,
                 Text = text
             };
         }
