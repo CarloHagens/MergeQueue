@@ -6,8 +6,6 @@ namespace MergeQueue.Dtos
     {
         [JsonPropertyName("trigger_id")]
         public string TriggerId { get; set; }
-
-        [JsonPropertyName("view")]
         public SlackViewDto View { get; set; }
     }
 }

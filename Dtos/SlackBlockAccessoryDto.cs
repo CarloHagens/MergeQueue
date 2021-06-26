@@ -6,9 +6,7 @@ namespace MergeQueue.Dtos
     {
         [JsonPropertyName("action_id")]
         public string ActionId { get; set; }
-        [JsonPropertyName("type")]
         public string Type { get; set; }
-        [JsonPropertyName("placeholder")]
         public SlackBlockTextDto Placeholder { get; set; }
     }
 }

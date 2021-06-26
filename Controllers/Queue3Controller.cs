@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Net.Http;
+﻿using System.Net.Http;
 using Microsoft.AspNetCore.Mvc;
 using MergeQueue.Dtos;
 using MergeQueue.Entities;

@@ -7,7 +7,6 @@ namespace MergeQueue.Dtos
     {
         [JsonPropertyName("workflow_step_edit_id")]
         public string WorkFlowStepEditId { get; set; }
-        [JsonPropertyName("inputs")]
         public Dictionary<string, SlackInputValueDto> Inputs {get; set; }
     }
 }
