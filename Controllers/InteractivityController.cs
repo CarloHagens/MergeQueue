@@ -41,10 +41,11 @@ namespace MergeQueue.Controllers
                 return Ok();
             }
 
-            if (requestObject?.Type == SlackInteractivityTypes.BlockActions)
-            {
-                return Ok();
-            }
+            // TODO: Part of UI validation.
+            //if (requestObject?.Type == SlackInteractivityTypes.BlockActions)
+            //{
+            //    return Ok();
+            //}
 
             return Ok();
         }
