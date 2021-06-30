@@ -10,24 +10,30 @@ namespace MergeQueue.Controllers
     [ApiController]
     public class BaseController : ControllerBase
     {
+        private readonly HttpClient _httpClient;
         protected readonly IQueueRepository Repository;
-        protected readonly HttpClient HttpClient;
 
         public BaseController(IQueueRepository repository, HttpClient httpClient)
         {
             Repository = repository;
-            HttpClient = httpClient;
-            if (!HttpClient.DefaultRequestHeaders.Contains("Authorization"))
+            _httpClient = httpClient;
+            if (!_httpClient.DefaultRequestHeaders.Contains("Authorization"))
             {
-                HttpClient.DefaultRequestHeaders.Add("Authorization",
+                _httpClient.DefaultRequestHeaders.Add("Authorization",
                     "Bearer xoxb-2174785981490-2171724521813-wsp1iua7epk4dI3IQDUhEaft");
             }
         }
 
         protected async Task PostToUrlWithBody(string url, object body)
         {
-            var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-            await HttpClient.PostAsync(url, content);
+            var serializationSettings = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                PropertyNamingPolicy = new SnakeCaseNamingPolicy()
+            };
+            var serializedBody = JsonSerializer.Serialize(body, serializationSettings);
+            var content = new StringContent(serializedBody, Encoding.UTF8, "application/json");
+            await _httpClient.PostAsync(url, content);
         }
     }
 }
