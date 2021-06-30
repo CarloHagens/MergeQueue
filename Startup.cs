@@ -57,7 +57,7 @@ namespace MergeQueue
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"MergeQueue {Version}"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint($"/swagger/{Version}/swagger.json", $"MergeQueue {Version}"));
             }
 
             app.UseRouting();
