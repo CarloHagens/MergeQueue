@@ -1,4 +1,5 @@
 ﻿using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MergeQueue.Dtos;
 using MergeQueue.Entities;
@@ -17,7 +18,7 @@ namespace MergeQueue.Controllers
         }
 
         [HttpPost]
-        public ActionResult Post([FromBody] SlackEventSubscriptionRequestDto request)
+        public async Task<ActionResult> Post([FromBody] SlackEventSubscriptionRequestDto request)
         {
             if (request.Type == SlackEventTypes.UrlVerification)
             {
@@ -27,16 +28,36 @@ namespace MergeQueue.Controllers
                 && request.Event.Type == "workflow_step_execute"
                 && request.Event.CallbackId == Commands.Join)
             {
+                var channelId = request.Event.WorkflowStep.Inputs["selected_channel"].Value;
+                var userId = request.Event.WorkflowStep.Inputs["selected_user"].Value;
                 var user = new User
                 {
-                    ChannelId = request.Event.WorkflowStep.Inputs["selected_channel"].Value,
-                    UserId = request.Event.WorkflowStep.Inputs["selected_user"].Value
+                    ChannelId = channelId,
+                    UserId = userId
                 };
                 Repository.AddUser(user);
+
+                var body = CreateJoinQueueBody(channelId, userId);
+                await PostToUrlWithBody(SlackApiEndpoints.SendMessage, body);
+
                 return Ok();
             }
 
             return Ok();
+        }
+
+        private SlackSendMessageRequestDto CreateJoinQueueBody(string channelId, string userId)
+        {
+            var queuedUsers = Repository.GetUsersForChannel(channelId);
+            var responseText = queuedUsers.Count == 1
+                ? $"<@{userId}> is now first in the queue!"
+                : $"<@{userId}> joined the queue.";
+            var body = new SlackSendMessageRequestDto
+            {
+                Channel = channelId,
+                Text = responseText
+            };
+            return body;
         }
     }
 }

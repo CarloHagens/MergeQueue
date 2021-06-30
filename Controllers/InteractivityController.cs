@@ -54,7 +54,7 @@ namespace MergeQueue.Controllers
                 TriggerId = triggerId,
                 View = SelectChannelAndUserView(false)
             };
-            await PostToUrlWithBody("https://slack.com/api/views.open", body);
+            await PostToUrlWithBody(SlackApiEndpoints.OpenView, body);
         }
 
         private async Task UpdateView(string triggerId)
@@ -64,7 +64,7 @@ namespace MergeQueue.Controllers
                 TriggerId = triggerId,
                 View = SelectChannelAndUserView(true)
             };
-            await PostToUrlWithBody("https://slack.com/api/views.update", body);
+            await PostToUrlWithBody(SlackApiEndpoints.UpdateView, body);
         }
 
         private static SlackViewDto SelectChannelAndUserView(bool submitDisabled)
@@ -135,7 +135,7 @@ namespace MergeQueue.Controllers
                 {"selected_channel", new SlackInputValueDto{ Value = selectedChannel}}
             };
 
-            await PostToUrlWithBody("https://slack.com/api/workflows.updateStep", body);
+            await PostToUrlWithBody(SlackApiEndpoints.UpdateWorkflowStep, body);
         }
     }
 }

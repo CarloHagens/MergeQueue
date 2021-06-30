@@ -20,6 +20,7 @@ namespace MergeQueue.Controllers
                                              $"`/queue {Commands.Show}` - Show a queue for this channel\n" +
                                              $"`/queue {Commands.Join}` - Join the queue\n" +
                                              $"`/queue {Commands.Leave}` - Leave the queue\n" +
+                                             $"`/queue {Commands.Kick} @user` - Kick user from the queue\n" +
                                              $"`/queue {Commands.Help}` - Show all available commands";
 
         public SlashCommandsController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
@@ -68,6 +69,21 @@ namespace MergeQueue.Controllers
                 return Ok();
             }
 
+            if (request.GetKickCommand() == Commands.Kick)
+            {
+                var userIdToKick = request.text.Split('@')[1].Split('|')[0].Trim();
+                var body = CreateLeaveQueueBody(request, userIdToKick);
+
+                var wasPersonRemoved = Repository.RemoveUser(request.ToKickUser(userIdToKick));
+                if (!wasPersonRemoved)
+                {
+                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText($"<@{userIdToKick}> is not in the queue."));
+                }
+
+                await PostToUrlWithBody(request.response_url, body);
+                return Ok();
+            }
+
             var helpResponseBody = new SlackSlashResponseDto
             {
                 ResponseType = SlackMessageType.Ephemeral,
@@ -81,11 +97,12 @@ namespace MergeQueue.Controllers
             return Ok(helpResponseBody);
         }
 
-        private SlackSlashResponseDto CreateLeaveQueueBody(SlackSlashRequestDto request)
+        private SlackSlashResponseDto CreateLeaveQueueBody(SlackSlashRequestDto request, string userId = null)
         {
-            var responseText = $"<@{request.user_id}> left the queue.";
+            var userIdToUse = userId ?? request.user_id;
+            var responseText = $"<@{userIdToUse}> left the queue.";
             var queuedPeople = Repository.GetUsersForChannel(request.channel_id);
-            if (queuedPeople.Count > 0 && queuedPeople.First().UserId == request.user_id)
+            if (queuedPeople.Count > 0 && queuedPeople.First().UserId == userIdToUse)
             {
                 if (queuedPeople.Count > 1)
                 {
