@@ -37,8 +37,7 @@ namespace MergeQueue.Controllers
             };
             var serializedBody = JsonSerializer.Serialize(body, serializationSettings);
             var content = new StringContent(serializedBody, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync(url, content);
-            var responseContent = await response.Content.ReadAsStringAsync();
+            await _httpClient.PostAsync(url, content);
         }
     }
 }
