@@ -3,7 +3,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using MergeQueue.Repositories;
+using MergeQueue.Settings;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace MergeQueue.Controllers
 {
@@ -13,15 +15,17 @@ namespace MergeQueue.Controllers
         private readonly HttpClient _httpClient;
         protected readonly IQueueRepository Repository;
 
-        public BaseController(IQueueRepository repository, HttpClient httpClient)
+        public BaseController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient)
         {
             Repository = repository;
             _httpClient = httpClient;
-            if (!_httpClient.DefaultRequestHeaders.Contains("Authorization"))
+            if (_httpClient.DefaultRequestHeaders.Contains("Authorization"))
             {
-                _httpClient.DefaultRequestHeaders.Add("Authorization",
-                    "Bearer xoxb-2174785981490-2171724521813-wsp1iua7epk4dI3IQDUhEaft");
+                return;
             }
+            var settings = configuration.GetSection(nameof(SlackApiSettings)).Get<SlackApiSettings>();
+            _httpClient.DefaultRequestHeaders.Add("Authorization",
+                $"Bearer {settings}");
         }
 
         protected async Task PostToUrlWithBody(string url, object body)
@@ -33,7 +37,8 @@ namespace MergeQueue.Controllers
             };
             var serializedBody = JsonSerializer.Serialize(body, serializationSettings);
             var content = new StringContent(serializedBody, Encoding.UTF8, "application/json");
-            await _httpClient.PostAsync(url, content);
+            var response = await _httpClient.PostAsync(url, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
         }
     }
 }

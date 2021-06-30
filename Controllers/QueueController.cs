@@ -9,6 +9,7 @@ using MergeQueue.Dtos;
 using MergeQueue.Entities;
 using MergeQueue.Extensions;
 using MergeQueue.Types;
+using Microsoft.Extensions.Configuration;
 
 namespace MergeQueue.Controllers
 {
@@ -21,8 +22,8 @@ namespace MergeQueue.Controllers
                                              $"`/queue {Commands.Leave}` - Leave the queue\n" +
                                              $"`/queue {Commands.Help}` - Show all available commands";
 
-        public QueueController(IQueueRepository repository, HttpClient httpClient) 
-            : base(repository, httpClient)
+        public QueueController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
+            : base(configuration, repository, httpClient)
         {
         }
 

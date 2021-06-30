@@ -4,14 +4,15 @@ using MergeQueue.Dtos;
 using MergeQueue.Entities;
 using MergeQueue.Repositories;
 using MergeQueue.Types;
+using Microsoft.Extensions.Configuration;
 
 namespace MergeQueue.Controllers
 {
     [Route("[controller]")]
     public class Queue3Controller : BaseController
     {
-        public Queue3Controller(IQueueRepository repository, HttpClient httpClient) 
-            : base(repository, httpClient)
+        public Queue3Controller(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
+            : base(configuration, repository, httpClient)
         {
         }
 

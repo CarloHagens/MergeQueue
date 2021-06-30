@@ -8,21 +8,27 @@ using Microsoft.AspNetCore.Mvc;
 using MergeQueue.Dtos;
 using MergeQueue.Repositories;
 using MergeQueue.Types;
+using Microsoft.Extensions.Configuration;
 
 namespace MergeQueue.Controllers
 {
     [Route("[controller]")]
     public class Queue2Controller : BaseController
     {
-        public Queue2Controller(IQueueRepository repository, HttpClient httpClient) 
-            : base(repository, httpClient)
+        public Queue2Controller(IConfiguration  configuration, IQueueRepository repository, HttpClient httpClient) 
+            : base(configuration, repository, httpClient)
         {
         }
 
         [HttpPost]
         public async Task<ActionResult> Post([FromForm] SlackInteractivityRequestDto request)
         {
-            var requestObject = JsonSerializer.Deserialize<SlackInteractivityRequestPayloadDto>(request.payload);
+            var serializationSettings = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                PropertyNamingPolicy = new SnakeCaseNamingPolicy()
+            };
+            var requestObject = JsonSerializer.Deserialize<SlackInteractivityRequestPayloadDto>(request.payload, serializationSettings);
             if (requestObject?.Type == SlackInteractivityTypes.WorkflowStepEdit)
             {
                 await OpenView(requestObject?.TriggerId);
@@ -116,7 +122,7 @@ namespace MergeQueue.Controllers
         {
             var body = new SlackInteractivityUpdateStepDto
             {
-                WorkFlowStepEditId = requestObject.WorkflowStep.WorkflowStepEditId
+                WorkflowStepEditId = requestObject.WorkflowStep.WorkflowStepEditId
             };
 
             var selectedUser = requestObject.View.State.Values.SelectMany(block => block.Value)
