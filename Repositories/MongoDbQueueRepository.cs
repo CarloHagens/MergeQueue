@@ -10,19 +10,19 @@ namespace MergeQueue.Repositories
     {
         private const string DatabaseName = "queue";
         private const string CollectionName = "users";
-        private readonly IMongoCollection<User> userCollection;
+        private readonly IMongoCollection<User> _userCollection;
 
         public MongoDbQueueRepository(IMongoClient mongoClient)
         {
             var database = mongoClient.GetDatabase(DatabaseName);
-            userCollection = database.GetCollection<User>(CollectionName);
+            _userCollection = database.GetCollection<User>(CollectionName);
         }
 
         public List<User> GetUsersForChannel(string channelId)
         {
             var builder = Builders<User>.Filter;
             var filter = builder.Eq(user => user.ChannelId, channelId);
-            return userCollection.Find(filter).ToList();
+            return _userCollection.Find(filter).ToList();
         }
 
         public bool AddUser(User userToAdd)
@@ -31,11 +31,11 @@ namespace MergeQueue.Repositories
             var filter = builder.And(
                 builder.Eq(user => user.ChannelId, userToAdd.ChannelId),
                 builder.Eq(user => user.UserId, userToAdd.UserId));
-            if (userCollection.Find(filter).Any())
+            if (_userCollection.Find(filter).Any())
             {
                 return false;
             }
-            userCollection.InsertOne(userToAdd);
+            _userCollection.InsertOne(userToAdd);
             return true;
         }
 
@@ -46,14 +46,14 @@ namespace MergeQueue.Repositories
                 builder.Eq(user => user.ChannelId, userToRemove.ChannelId),
                 builder.Eq(user => user.UserId, userToRemove.UserId));
 
-            var foundUsers = userCollection.Find(filter).ToList();
+            var foundUsers = _userCollection.Find(filter).ToList();
 
             if (foundUsers.Count == 0)
             {
                 return false;
             }
 
-            userCollection.DeleteOne(filter);
+            _userCollection.DeleteOne(filter);
             return true;
         }
 

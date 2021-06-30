@@ -14,7 +14,7 @@ namespace MergeQueue.Controllers
     [Route("[controller]")]
     public class InteractivityController : BaseController
     {
-        public InteractivityController(IConfiguration  configuration, IQueueRepository queueRepository, HttpClient httpClient) 
+        public InteractivityController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient)
             : base(configuration, queueRepository, httpClient)
         {
         }
@@ -28,11 +28,13 @@ namespace MergeQueue.Controllers
                 PropertyNamingPolicy = new SnakeCaseNamingPolicy()
             };
             var requestObject = JsonSerializer.Deserialize<SlackInteractivityRequestPayloadDto>(request.payload, serializationSettings);
+
             if (requestObject?.Type == SlackInteractivityTypes.WorkflowStepEdit)
             {
                 await OpenView(requestObject?.TriggerId);
                 return Ok();
             }
+
             if (requestObject?.Type == SlackInteractivityTypes.ViewSubmission)
             {
                 await UpdateStep(requestObject);
@@ -57,19 +59,20 @@ namespace MergeQueue.Controllers
             await PostToUrlWithBody(SlackApiEndpoints.OpenView, body);
         }
 
-        private async Task UpdateView(string triggerId)
-        {
-            var body = new SlackInteractivityViewOpenDto
-            {
-                TriggerId = triggerId,
-                View = SelectChannelAndUserView(true)
-            };
-            await PostToUrlWithBody(SlackApiEndpoints.UpdateView, body);
-        }
+        // TODO: Part of UI validation.
+        //private async Task UpdateView(string triggerId)
+        //{
+        //    var body = new SlackInteractivityViewOpenDto
+        //    {
+        //        TriggerId = triggerId,
+        //        View = SelectChannelAndUserView(true)
+        //    };
+        //    await PostToUrlWithBody(SlackApiEndpoints.UpdateView, body);
+        //}
 
         private static SlackViewDto SelectChannelAndUserView(bool submitDisabled)
         {
-            return new ()
+            return new()
             {
                 Type = SlackInteractivityViewType.WorkflowStep,
                 SubmitDisabled = submitDisabled,

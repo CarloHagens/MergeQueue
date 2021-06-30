@@ -24,8 +24,7 @@ namespace MergeQueue.Controllers
                 return;
             }
             var settings = configuration.GetSection(nameof(SlackApiSettings)).Get<SlackApiSettings>();
-            _httpClient.DefaultRequestHeaders.Add("Authorization",
-                $"Bearer {settings.Token}");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.Token}");
         }
 
         protected async Task PostToUrlWithBody(string url, object body)

@@ -17,6 +17,7 @@ namespace MergeQueue
     public class Startup
     {
         private IConfiguration Configuration { get; }
+        private const string Version = "v1.1";
 
         public Startup(IConfiguration configuration)
         {
@@ -45,7 +46,7 @@ namespace MergeQueue
                 });
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "MergeQueue", Version = "v1" });
+                c.SwaggerDoc(Version, new OpenApiInfo { Title = "MergeQueue", Version = Version });
             });
         }
 
@@ -56,7 +57,7 @@ namespace MergeQueue
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "MergeQueue v1"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"MergeQueue {Version}"));
             }
 
             app.UseRouting();
