@@ -9,9 +9,9 @@ using Microsoft.Extensions.Configuration;
 namespace MergeQueue.Controllers
 {
     [Route("[controller]")]
-    public class Queue3Controller : BaseController
+    public class EventsController : BaseController
     {
-        public Queue3Controller(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
+        public EventsController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
             : base(configuration, repository, httpClient)
         {
         }

@@ -14,7 +14,7 @@ using Microsoft.Extensions.Configuration;
 namespace MergeQueue.Controllers
 {
     [Route("[controller]")]
-    public class QueueController : BaseController
+    public class SlashCommandsController : BaseController
     {
         private readonly string _queueCommands = "" +
                                              $"`/queue {Commands.Show}` - Show a queue for this channel\n" +
@@ -22,7 +22,7 @@ namespace MergeQueue.Controllers
                                              $"`/queue {Commands.Leave}` - Leave the queue\n" +
                                              $"`/queue {Commands.Help}` - Show all available commands";
 
-        public QueueController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
+        public SlashCommandsController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
             : base(configuration, repository, httpClient)
         {
         }

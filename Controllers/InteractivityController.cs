@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -13,9 +12,9 @@ using Microsoft.Extensions.Configuration;
 namespace MergeQueue.Controllers
 {
     [Route("[controller]")]
-    public class Queue2Controller : BaseController
+    public class InteractivityController : BaseController
     {
-        public Queue2Controller(IConfiguration  configuration, IQueueRepository repository, HttpClient httpClient) 
+        public InteractivityController(IConfiguration  configuration, IQueueRepository repository, HttpClient httpClient) 
             : base(configuration, repository, httpClient)
         {
         }
