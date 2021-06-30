@@ -7,17 +7,12 @@ using MergeQueue.Types;
 
 namespace MergeQueue.Controllers
 {
-    [ApiController]
     [Route("[controller]")]
-    public class Queue3Controller : ControllerBase
+    public class Queue3Controller : BaseController
     {
-        private readonly IQueueRepository _repository;
-        private readonly HttpClient _httpClient;
-
-        public Queue3Controller(IQueueRepository repository, HttpClient httpClient)
+        public Queue3Controller(IQueueRepository repository, HttpClient httpClient) 
+            : base(repository, httpClient)
         {
-            _repository = repository;
-            _httpClient = httpClient;
         }
 
         [HttpPost]
@@ -36,7 +31,7 @@ namespace MergeQueue.Controllers
                     ChannelId = request.Event.WorkflowStep.Inputs["selected_channel"].Value,
                     UserId = request.Event.WorkflowStep.Inputs["selected_user"].Value
                 };
-                _repository.AddUser(user);
+                Repository.AddUser(user);
                 return Ok();
             }
 

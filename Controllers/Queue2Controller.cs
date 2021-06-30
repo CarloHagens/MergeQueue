@@ -6,24 +6,17 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MergeQueue.Dtos;
+using MergeQueue.Repositories;
 using MergeQueue.Types;
 
 namespace MergeQueue.Controllers
 {
-    [ApiController]
     [Route("[controller]")]
-    public class Queue2Controller : ControllerBase
+    public class Queue2Controller : BaseController
     {
-        private readonly HttpClient _httpClient;
-
-        public Queue2Controller(HttpClient httpClient)
+        public Queue2Controller(IQueueRepository repository, HttpClient httpClient) 
+            : base(repository, httpClient)
         {
-            _httpClient = httpClient;
-            if (!_httpClient.DefaultRequestHeaders.Contains("Authorization"))
-            {
-                _httpClient.DefaultRequestHeaders.Add("Authorization",
-                    "Bearer xoxb-2174785981490-2171724521813-wsp1iua7epk4dI3IQDUhEaft");
-            }
         }
 
         [HttpPost]
@@ -51,24 +44,22 @@ namespace MergeQueue.Controllers
 
         private async Task OpenView(string triggerId)
         {
-            var responseBody = new SlackInteractivityViewOpenDto
+            var body = new SlackInteractivityViewOpenDto
             {
                 TriggerId = triggerId,
                 View = SelectChannelAndUserView(false)
             };
-            var content = new StringContent(JsonSerializer.Serialize(responseBody), Encoding.UTF8, "application/json");
-            await _httpClient.PostAsync("https://slack.com/api/views.open", content);
+            await PostToUrlWithBody("https://slack.com/api/views.open", body);
         }
 
         private async Task UpdateView(string triggerId)
         {
-            var responseBody = new SlackInteractivityViewOpenDto
+            var body = new SlackInteractivityViewOpenDto
             {
                 TriggerId = triggerId,
                 View = SelectChannelAndUserView(true)
             };
-            var content = new StringContent(JsonSerializer.Serialize(responseBody), Encoding.UTF8, "application/json");
-            await _httpClient.PostAsync("https://slack.com/api/views.update", content);
+            await PostToUrlWithBody("https://slack.com/api/views.update", body);
         }
 
         private static SlackViewDto SelectChannelAndUserView(bool submitDisabled)
@@ -123,7 +114,7 @@ namespace MergeQueue.Controllers
 
         private async Task UpdateStep(SlackInteractivityRequestPayloadDto requestObject)
         {
-            var responseBody = new SlackInteractivityUpdateStepDto
+            var body = new SlackInteractivityUpdateStepDto
             {
                 WorkFlowStepEditId = requestObject.WorkflowStep.WorkflowStepEditId
             };
@@ -133,15 +124,13 @@ namespace MergeQueue.Controllers
             var selectedChannel = requestObject.View.State.Values.SelectMany(block => block.Value)
                 .FirstOrDefault(action => action.Key == "select_channel").Value.SelectedChannel;
 
-            responseBody.Inputs = new Dictionary<string, SlackInputValueDto>
+            body.Inputs = new Dictionary<string, SlackInputValueDto>
             {
                 {"selected_user", new SlackInputValueDto{ Value = selectedUser}},
                 {"selected_channel", new SlackInputValueDto{ Value = selectedChannel}}
             };
 
-            var content = new StringContent(JsonSerializer.Serialize(responseBody), Encoding.UTF8,"application/json");
-            var response = await _httpClient.PostAsync("https://slack.com/api/workflows.updateStep", content);
-            var responseContent = await response.Content.ReadAsStringAsync();
+            await PostToUrlWithBody("https://slack.com/api/workflows.updateStep", body);
         }
     }
 }
