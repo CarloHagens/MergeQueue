@@ -12,8 +12,8 @@ namespace MergeQueue.Controllers
     [Route("[controller]")]
     public class EventsController : BaseController
     {
-        public EventsController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
-            : base(configuration, repository, httpClient)
+        public EventsController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient) 
+            : base(configuration, queueRepository, httpClient)
         {
         }
 
@@ -35,7 +35,7 @@ namespace MergeQueue.Controllers
                     ChannelId = channelId,
                     UserId = userId
                 };
-                Repository.AddUser(user);
+                QueueRepository.AddUser(user);
 
                 var body = CreateJoinQueueBody(channelId, userId);
                 await PostToUrlWithBody(SlackApiEndpoints.SendMessage, body);
@@ -48,7 +48,7 @@ namespace MergeQueue.Controllers
 
         private SlackSendMessageRequestDto CreateJoinQueueBody(string channelId, string userId)
         {
-            var queuedUsers = Repository.GetUsersForChannel(channelId);
+            var queuedUsers = QueueRepository.GetUsersForChannel(channelId);
             var responseText = queuedUsers.Count == 1
                 ? $"<@{userId}> is now first in the queue!"
                 : $"<@{userId}> joined the queue.";

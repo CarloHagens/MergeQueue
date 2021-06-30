@@ -13,11 +13,11 @@ namespace MergeQueue.Controllers
     public class BaseController : ControllerBase
     {
         private readonly HttpClient _httpClient;
-        protected readonly IQueueRepository Repository;
+        protected readonly IQueueRepository QueueRepository;
 
-        public BaseController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient)
+        public BaseController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient)
         {
-            Repository = repository;
+            QueueRepository = queueRepository;
             _httpClient = httpClient;
             if (_httpClient.DefaultRequestHeaders.Contains("Authorization"))
             {

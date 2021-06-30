@@ -56,5 +56,19 @@ namespace MergeQueue.Repositories
             userCollection.DeleteOne(filter);
             return true;
         }
+
+        public void Jump(User user)
+        {
+            var usersForChannel = GetUsersForChannel(user.ChannelId);
+            foreach (var userInChannel in usersForChannel)
+            {
+                RemoveUser(userInChannel);
+            }
+            AddUser(user);
+            foreach (var userInChannel in usersForChannel)
+            {
+                AddUser(userInChannel);
+            }
+        }
     }
 }

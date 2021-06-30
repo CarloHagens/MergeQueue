@@ -20,11 +20,12 @@ namespace MergeQueue.Controllers
                                              $"`/queue {Commands.Show}` - Show a queue for this channel\n" +
                                              $"`/queue {Commands.Join}` - Join the queue\n" +
                                              $"`/queue {Commands.Leave}` - Leave the queue\n" +
+                                             $"`/queue {Commands.Jump}` - Jump to the first position in the queue\n" +
                                              $"`/queue {Commands.Kick} @user` - Kick user from the queue\n" +
                                              $"`/queue {Commands.Help}` - Show all available commands";
 
-        public SlashCommandsController(IConfiguration configuration, IQueueRepository repository, HttpClient httpClient) 
-            : base(configuration, repository, httpClient)
+        public SlashCommandsController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient) 
+            : base(configuration, queueRepository, httpClient)
         {
         }
 
@@ -33,7 +34,7 @@ namespace MergeQueue.Controllers
         {
             if (request.GetCommand() == Commands.Show)
             {
-                var queuedPeople = Repository.GetUsersForChannel(request.channel_id);
+                var queuedPeople = QueueRepository.GetUsersForChannel(request.channel_id);
                 if (queuedPeople.Count == 0)
                 {
                     return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("The queue is currently empty."));
@@ -45,7 +46,7 @@ namespace MergeQueue.Controllers
 
             if (request.GetCommand() == Commands.Join)
             {
-                var wasUserAdded = Repository.AddUser(request.ToUser());
+                var wasUserAdded = QueueRepository.AddUser(request.ToUser());
                 if (!wasUserAdded)
                 {
                     return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("You are already in the queue."));
@@ -59,7 +60,7 @@ namespace MergeQueue.Controllers
             {
                 var body = CreateLeaveQueueBody(request);
 
-                var wasPersonRemoved = Repository.RemoveUser(request.ToUser());
+                var wasPersonRemoved = QueueRepository.RemoveUser(request.ToUser());
                 if (!wasPersonRemoved)
                 {
                     return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("You are not in the queue."));
@@ -69,12 +70,20 @@ namespace MergeQueue.Controllers
                 return Ok();
             }
 
+            if (request.GetCommand() == Commands.Jump)
+            {
+                QueueRepository.Jump(request.ToUser());
+                var body = CreateJumpQueueBody(request);
+                await PostToUrlWithBody(request.response_url, body);
+                return Ok();
+            }
+
             if (request.GetKickCommand() == Commands.Kick)
             {
                 var userIdToKick = request.text.Split('@')[1].Split('|')[0].Trim();
                 var body = CreateLeaveQueueBody(request, userIdToKick);
 
-                var wasPersonRemoved = Repository.RemoveUser(request.ToKickUser(userIdToKick));
+                var wasPersonRemoved = QueueRepository.RemoveUser(request.ToKickUser(userIdToKick));
                 if (!wasPersonRemoved)
                 {
                     return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText($"<@{userIdToKick}> is not in the queue."));
@@ -101,7 +110,7 @@ namespace MergeQueue.Controllers
         {
             var userIdToUse = userId ?? request.user_id;
             var responseText = $"<@{userIdToUse}> left the queue.";
-            var queuedPeople = Repository.GetUsersForChannel(request.channel_id);
+            var queuedPeople = QueueRepository.GetUsersForChannel(request.channel_id);
             if (queuedPeople.Count > 0 && queuedPeople.First().UserId == userIdToUse)
             {
                 if (queuedPeople.Count > 1)
@@ -120,10 +129,17 @@ namespace MergeQueue.Controllers
 
         private SlackSlashResponseDto CreateJoinQueueBody(SlackSlashRequestDto request)
         {
-            var queuedUsers = Repository.GetUsersForChannel(request.channel_id);
+            var queuedUsers = QueueRepository.GetUsersForChannel(request.channel_id);
             var responseText = queuedUsers.Count == 1
                 ? $"<@{request.user_id}> is now first in the queue!"
                 : $"<@{request.user_id}> joined the queue.";
+            var response = SlackSlashResponseBuilder.CreateChannelResponseWithText(responseText);
+            return response;
+        }
+
+        private SlackSlashResponseDto CreateJumpQueueBody(SlackSlashRequestDto request)
+        {
+            var responseText = $"<@{request.user_id}> is now first in the queue!";
             var response = SlackSlashResponseBuilder.CreateChannelResponseWithText(responseText);
             return response;
         }

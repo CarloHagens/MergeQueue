@@ -14,8 +14,8 @@ namespace MergeQueue.Controllers
     [Route("[controller]")]
     public class InteractivityController : BaseController
     {
-        public InteractivityController(IConfiguration  configuration, IQueueRepository repository, HttpClient httpClient) 
-            : base(configuration, repository, httpClient)
+        public InteractivityController(IConfiguration  configuration, IQueueRepository queueRepository, HttpClient httpClient) 
+            : base(configuration, queueRepository, httpClient)
         {
         }
 

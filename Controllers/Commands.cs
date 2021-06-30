@@ -7,5 +7,6 @@
         public static string Leave => nameof(Leave).ToLowerInvariant();
         public static string Kick => nameof(Kick).ToLowerInvariant();
         public static string Help => nameof(Help).ToLowerInvariant();
+        public static string Jump => nameof(Jump).ToLowerInvariant();
     }
 }
