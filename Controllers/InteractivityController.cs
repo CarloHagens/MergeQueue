@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using MergeQueue.Builders;
 using Microsoft.AspNetCore.Mvc;
 using MergeQueue.Dtos;
 using MergeQueue.Repositories;
@@ -22,23 +23,15 @@ namespace MergeQueue.Controllers
         [HttpPost]
         public async Task<ActionResult> Post([FromForm] SlackInteractivityRequestDto request)
         {
-            var serializationSettings = new JsonSerializerOptions
-            {
-                IgnoreNullValues = true,
-                PropertyNamingPolicy = new SnakeCaseNamingPolicy()
-            };
-            var requestObject = JsonSerializer.Deserialize<SlackInteractivityRequestPayloadDto>(request.payload, serializationSettings);
+            var requestObject = DeserializePayload(request);
 
             if (requestObject?.Type == SlackInteractivityTypes.WorkflowStepEdit)
             {
                 await OpenView(requestObject?.TriggerId);
-                return Ok();
             }
-
-            if (requestObject?.Type == SlackInteractivityTypes.ViewSubmission)
+            else if (requestObject?.Type == SlackInteractivityTypes.ViewSubmission)
             {
                 await UpdateStep(requestObject);
-                return Ok();
             }
 
             // TODO: Part of UI validation.
@@ -48,6 +41,16 @@ namespace MergeQueue.Controllers
             //}
 
             return Ok();
+        }
+
+        private static SlackInteractivityRequestPayloadDto DeserializePayload(SlackInteractivityRequestDto request)
+        {
+            var serializationSettings = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                PropertyNamingPolicy = new SnakeCaseNamingPolicy()
+            };
+            return JsonSerializer.Deserialize<SlackInteractivityRequestPayloadDto>(request.payload, serializationSettings);
         }
 
         private async Task OpenView(string triggerId)
@@ -79,44 +82,22 @@ namespace MergeQueue.Controllers
                 SubmitDisabled = submitDisabled,
                 Blocks = new List<SlackBlockDto>
                 {
-                    new()
-                    {
-                        Type = SlackBlockType.Section,
-                        Text = new SlackBlockTextDto
-                        {
-                            Type = SlackTextType.Markdown,
-                            Text = "Pick a user from the list."
-                        },
-                        Accessory = new SlackBlockAccessoryDto
-                        {
-                            ActionId = "select_user",
-                            Type = SlackBlockType.UsersSelect,
-                            Placeholder = new SlackBlockTextDto
-                            {
-                                Type = SlackTextType.PlainText,
-                                Text = "Select user"
-                            }
-                        }
-                    },
-                    new()
-                    {
-                        Type = SlackBlockType.Section,
-                        Text = new SlackBlockTextDto
-                        {
-                            Type = SlackTextType.Markdown,
-                            Text = "Pick a channel from the list."
-                        },
-                        Accessory = new SlackBlockAccessoryDto
-                        {
-                            ActionId = "select_channel",
-                            Type = SlackBlockType.ChannelsSelect,
-                            Placeholder = new SlackBlockTextDto
-                            {
-                                Type = SlackTextType.PlainText,
-                                Text = "Select channel"
-                            }
-                        }
-                    }
+                    SlackBlockBuilder
+                        .CreateSection()
+                        .WithText(ResponseMessages.SelectChannel)
+                        .WithAccessory(
+                            ActionIdTypes.SelectChannel,
+                            SlackBlockType.ChannelsSelect,
+                            ResponseMessages.SelectChannelPlaceholder
+                    ),
+                    SlackBlockBuilder
+                        .CreateSection()
+                        .WithText(ResponseMessages.SelectUser)
+                        .WithAccessory(
+                            ActionIdTypes.SelectUser,
+                            SlackBlockType.UsersSelect,
+                            ResponseMessages.SelectUserPlaceholder
+                    )
                 }
             };
         }
@@ -129,14 +110,14 @@ namespace MergeQueue.Controllers
             };
 
             var selectedUser = requestObject.View.State.Values.SelectMany(block => block.Value)
-                .FirstOrDefault(action => action.Key == "select_user").Value.SelectedUser;
+                .FirstOrDefault(action => action.Key == ActionIdTypes.SelectUser).Value.SelectedUser;
             var selectedChannel = requestObject.View.State.Values.SelectMany(block => block.Value)
-                .FirstOrDefault(action => action.Key == "select_channel").Value.SelectedChannel;
+                .FirstOrDefault(action => action.Key == ActionIdTypes.SelectChannel).Value.SelectedChannel;
 
             body.Inputs = new Dictionary<string, SlackInputValueDto>
             {
-                {"selected_user", new SlackInputValueDto{ Value = selectedUser}},
-                {"selected_channel", new SlackInputValueDto{ Value = selectedChannel}}
+                {InputTypes.SelectedChannel, new SlackInputValueDto{ Value = selectedChannel}},
+                {InputTypes.SelectedUser, new SlackInputValueDto{ Value = selectedUser}}
             };
 
             await PostToUrlWithBody(SlackApiEndpoints.UpdateWorkflowStep, body);

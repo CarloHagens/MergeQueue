@@ -2,11 +2,11 @@
 {
     public static class Commands
     {
-        public static string Show => nameof(Show).ToLowerInvariant();
-        public static string Join => nameof(Join).ToLowerInvariant();
-        public static string Leave => nameof(Leave).ToLowerInvariant();
-        public static string Kick => nameof(Kick).ToLowerInvariant();
-        public static string Help => nameof(Help).ToLowerInvariant();
-        public static string Jump => nameof(Jump).ToLowerInvariant();
+        public const string Show = "show";
+        public const string Join = "join";
+        public const string Jump = "jump";
+        public const string Leave = "leave";
+        public const string Kick = "kick";
+        public const string Help = "help";
     }
 }

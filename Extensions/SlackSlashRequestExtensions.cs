@@ -15,7 +15,7 @@ namespace MergeQueue.Extensions
             };
         }
 
-        public static User ToKickUser(this SlackSlashRequestDto slackSlashCommand, string userId)
+        public static User ToUserToKick(this SlackSlashRequestDto slackSlashCommand, string userId)
         {
             return new()
             {

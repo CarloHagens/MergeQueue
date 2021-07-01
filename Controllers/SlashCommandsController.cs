@@ -16,14 +16,6 @@ namespace MergeQueue.Controllers
     [Route("[controller]")]
     public class SlashCommandsController : BaseController
     {
-        private readonly string _queueCommands = "" +
-                                             $"`/queue {Commands.Show}` - Show a queue for this channel\n" +
-                                             $"`/queue {Commands.Join}` - Join the queue\n" +
-                                             $"`/queue {Commands.Leave}` - Leave the queue\n" +
-                                             $"`/queue {Commands.Jump}` - Jump to the first position in the queue\n" +
-                                             $"`/queue {Commands.Kick} @user` - Kick user from the queue\n" +
-                                             $"`/queue {Commands.Help}` - Show all available commands";
-
         public SlashCommandsController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient) 
             : base(configuration, queueRepository, httpClient)
         {
@@ -32,128 +24,201 @@ namespace MergeQueue.Controllers
         [HttpPost]
         public async Task<ActionResult> Post([FromForm] SlackSlashRequestDto request)
         {
+            SlackSlashResponseDto responseBody;
             if (request.GetCommand() == Commands.Show)
             {
-                var queuedPeople = QueueRepository.GetUsersForChannel(request.channel_id);
-                if (queuedPeople.Count == 0)
-                {
-                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("The queue is currently empty."));
-                }
-                var body = CreateShowQueueBody(queuedPeople);
-                await PostToUrlWithBody(request.response_url, body);
-                return Ok();
+                responseBody = ShowQueue(request);
+            }
+            else if (request.GetCommand() == Commands.Join)
+            {
+                responseBody = await JoinQueue(request);
+            }
+            else if (request.GetCommand() == Commands.Leave)
+            {
+                responseBody = await LeaveQueue(request);
+            }
+            else if (request.GetCommand() == Commands.Jump)
+            {
+                responseBody = await JumpQueue(request);
             }
 
-            if (request.GetCommand() == Commands.Join)
+            else if (request.GetKickCommand() == Commands.Kick)
             {
-                var wasUserAdded = QueueRepository.AddUser(request.ToUser());
-                if (!wasUserAdded)
-                {
-                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("You are already in the queue."));
-                }
-                var body = CreateJoinQueueBody(request);
-                await PostToUrlWithBody(request.response_url, body);
-                return Ok();
+                responseBody = await KickFromQueue(request);
+            }
+            else
+            {
+                responseBody = Help();
             }
 
-            if (request.GetCommand() == Commands.Leave)
+            if (responseBody.Exists())
             {
-                var body = CreateLeaveQueueBody(request);
-
-                var wasPersonRemoved = QueueRepository.RemoveUser(request.ToUser());
-                if (!wasPersonRemoved)
-                {
-                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText("You are not in the queue."));
-                }
-
-                await PostToUrlWithBody(request.response_url, body);
-                return Ok();
+                return Ok(responseBody);
             }
-
-            if (request.GetCommand() == Commands.Jump)
-            {
-                QueueRepository.Jump(request.ToUser());
-                var body = CreateJumpQueueBody(request);
-                await PostToUrlWithBody(request.response_url, body);
-                return Ok();
-            }
-
-            if (request.GetKickCommand() == Commands.Kick)
-            {
-                var userIdToKick = request.text.Split('@')[1].Split('|')[0].Trim();
-                var body = CreateLeaveQueueBody(request, userIdToKick);
-
-                var wasPersonRemoved = QueueRepository.RemoveUser(request.ToKickUser(userIdToKick));
-                if (!wasPersonRemoved)
-                {
-                    return Ok(SlackSlashResponseBuilder.CreateEphemeralResponseWithText($"<@{userIdToKick}> is not in the queue."));
-                }
-
-                await PostToUrlWithBody(request.response_url, body);
-                return Ok();
-            }
-
-            var helpResponseBody = new SlackSlashResponseDto
-            {
-                ResponseType = SlackMessageType.Ephemeral,
-                Blocks = new List<SlackBlockDto>
-                    {
-                        SlackBlockBuilder.CreateSectionWithText(":wave: Need some help with `/queue`?"),
-                        SlackBlockBuilder.CreateSectionWithText("*Available commands*"),
-                        SlackBlockBuilder.CreateSectionWithText(_queueCommands)
-                    }
-            };
-            return Ok(helpResponseBody);
+            return Ok();
         }
 
-        private SlackSlashResponseDto CreateLeaveQueueBody(SlackSlashRequestDto request, string userId = null)
-        {
-            var userIdToUse = userId ?? request.user_id;
-            var responseText = $"<@{userIdToUse}> left the queue.";
-            var queuedPeople = QueueRepository.GetUsersForChannel(request.channel_id);
-            if (queuedPeople.Count > 0 && queuedPeople.First().UserId == userIdToUse)
-            {
-                if (queuedPeople.Count > 1)
-                {
-                    responseText += $"\n<@{queuedPeople[1].UserId}> it is now your turn!";
-                }
-                else
-                {
-                    responseText += " It is now empty.";
-                }
-            }
-
-            var response = SlackSlashResponseBuilder.CreateChannelResponseWithText(responseText);
-            return response;
-        }
-
-        private SlackSlashResponseDto CreateJoinQueueBody(SlackSlashRequestDto request)
+        private SlackSlashResponseDto ShowQueue(SlackSlashRequestDto request)
         {
             var queuedUsers = QueueRepository.GetUsersForChannel(request.channel_id);
-            var responseText = queuedUsers.Count == 1
-                ? $"<@{request.user_id}> is now first in the queue!"
-                : $"<@{request.user_id}> joined the queue.";
-            var response = SlackSlashResponseBuilder.CreateChannelResponseWithText(responseText);
-            return response;
-        }
 
-        private SlackSlashResponseDto CreateJumpQueueBody(SlackSlashRequestDto request)
-        {
-            var responseText = $"<@{request.user_id}> is now first in the queue!";
-            var response = SlackSlashResponseBuilder.CreateChannelResponseWithText(responseText);
-            return response;
-        }
-
-        private SlackSlashResponseDto CreateShowQueueBody(IEnumerable<User> queuedPeople)
-        {
-            var queue = queuedPeople.Select((queuedPerson, index) =>
-                SlackBlockBuilder.CreateSectionWithText($"{SlackNumberEmojis.From(index + 1)} <@{queuedPerson.UserId}>")).ToList();
-            var response = new SlackSlashResponseDto
+            SlackSlashResponseDto responseBody;
+            if (queuedUsers.Any())
             {
-                ResponseType = SlackMessageType.InChannel,
-                Blocks = queue
-            };
-            return response;
+                responseBody = CreateShowQueueBody(null, queuedUsers);
+            }
+            else
+            {
+                responseBody = SlackSlashResponseBuilder
+                    .CreateEphemeralResponse()
+                    .WithText(ResponseMessages.QueueIsEmpty);
+            }
+
+            return responseBody;
+        }
+
+        private async Task<SlackSlashResponseDto> JoinQueue(SlackSlashRequestDto request)
+        {
+            var user = request.ToUser();
+            var wasUserAdded = QueueRepository.AddUser(user);
+
+            SlackSlashResponseDto responseBody;
+            if (!wasUserAdded)
+            {
+                responseBody = SlackSlashResponseBuilder
+                    .CreateEphemeralResponse()
+                    .WithText(ResponseMessages.AlreadyInQueue);
+            }
+            else
+            {
+                var joinQueueBody = CreateJoinQueueBody(user);
+                await PostToUrlWithBody(request.response_url, joinQueueBody);
+                responseBody = CreateShowQueueBody(user.ChannelId);
+            }
+
+            return responseBody;
+        }
+
+        private async Task<SlackSlashResponseDto> JumpQueue(SlackSlashRequestDto request)
+        {
+            var user = request.ToUser();
+            QueueRepository.Jump(user);
+            var body = CreateJumpQueueBody(user);
+            await PostToUrlWithBody(request.response_url, body);
+            return CreateShowQueueBody(user.ChannelId);
+        }
+
+        private async Task<SlackSlashResponseDto> LeaveQueue(SlackSlashRequestDto request)
+        {
+            var user = request.ToUser();
+            var leaveQueueBody = CreateLeaveQueueBody(user);
+            var wasUserRemoved = QueueRepository.RemoveUser(user);
+
+            SlackSlashResponseDto responseBody = null;
+            if (!wasUserRemoved)
+            {
+                responseBody = SlackSlashResponseBuilder
+                    .CreateEphemeralResponse()
+                    .WithText(ResponseMessages.NotInQueue);
+            }
+            else
+            {
+                await PostToUrlWithBody(request.response_url, leaveQueueBody);
+            }
+
+            return responseBody;
+        }
+
+        private async Task<SlackSlashResponseDto> KickFromQueue(SlackSlashRequestDto request)
+        {
+            var userIdToKick = request.text.Split('@')[1].Split('|')[0].Trim();
+            var user = request.ToUserToKick(userIdToKick);
+            var body = CreateKickQueueBody(user);
+            var wasPersonRemoved = QueueRepository.RemoveUser(user);
+
+            SlackSlashResponseDto responseBody = null;
+            if (!wasPersonRemoved)
+            {
+                responseBody = SlackSlashResponseBuilder
+                    .CreateEphemeralResponse()
+                    .WithText(ResponseMessages.UserNotInQueue(userIdToKick));
+            }
+            else
+            {
+                await PostToUrlWithBody(request.response_url, body);
+            }
+
+            return responseBody;
+        }
+
+        private static SlackSlashResponseDto Help() =>
+            SlackSlashResponseBuilder
+                .CreateEphemeralResponse()
+                .WithBlocks(new List<SlackBlockDto>
+                {
+                    SlackBlockBuilder
+                        .CreateSection()
+                        .WithText(ResponseMessages.QueueIntroduction),
+                    SlackBlockBuilder
+                        .CreateSection()
+                        .WithText(ResponseMessages.AvailableCommands),
+                    SlackBlockBuilder
+                        .CreateSection()
+                        .WithText(ResponseMessages.QueueCommands)
+                });
+
+        private SlackSlashResponseDto CreateShowQueueBody(string channelId = null, List<User> queuedUsers = null)
+        {
+            if (queuedUsers.DoesNotExist() && channelId.Exists())
+            {
+                queuedUsers = QueueRepository.GetUsersForChannel(channelId);
+            }
+
+            var blockOfUsers = CreateShowQueueResponseBlocks(queuedUsers);
+
+            return SlackSlashResponseBuilder
+                .CreateEphemeralResponse()
+                .WithBlocks(blockOfUsers);
+        }
+
+        private SlackSlashResponseDto CreateJoinQueueBody(User user)
+        {
+            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
+            var responseText = queuedUsers.Count == 1
+                ? ResponseMessages.UserFirstInQueue(user.UserId)
+                : ResponseMessages.UserJoinedQueue(user.UserId);
+
+            return SlackSlashResponseBuilder
+                .CreateChannelResponse()
+                .WithText(responseText);
+        }
+
+        private static SlackSlashResponseDto CreateJumpQueueBody(User user)
+        {
+            var responseText = ResponseMessages.UserJumpedQueue(user.UserId);
+            return SlackSlashResponseBuilder
+                .CreateChannelResponse()
+                .WithText(responseText);
+        }
+
+        private SlackSlashResponseDto CreateLeaveQueueBody(User user)
+        {
+            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
+            var responseText = CreateLeaveQueueResponseText(user, queuedUsers);
+            return SlackSlashResponseBuilder
+                .CreateChannelResponse()
+                .WithText(responseText);
+
+        }
+
+        private SlackSlashResponseDto CreateKickQueueBody(User user)
+        {
+            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
+            var responseText = CreateKickQueueResponseText(user, queuedUsers);
+
+            return SlackSlashResponseBuilder
+                .CreateChannelResponse()
+                .WithText(responseText);
         }
     }
 }
