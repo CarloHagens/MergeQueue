@@ -25,7 +25,7 @@ namespace MergeQueue.Filters
             request.Headers.TryGetValue("X-Slack-Request-Timestamp", out var slackRequestTimeStamp);
             request.Headers.TryGetValue("X-Slack-Signature", out var slackSignature);
 
-            if (slackRequestTimeStamp.DoesNotExist() || slackSignature.DoesNotExist())
+            if (slackRequestTimeStamp.DoesNotExist() || string.IsNullOrEmpty(slackRequestTimeStamp.FirstOrDefault()) || slackSignature.DoesNotExist() || string.IsNullOrEmpty(slackSignature.FirstOrDefault()))
             {
                 context.Result = new UnauthorizedResult();
                 return;
