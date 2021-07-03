@@ -5,7 +5,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using System.Net.Http;
+using MergeQueue.Filters;
 using MergeQueue.Settings;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -17,7 +19,7 @@ namespace MergeQueue
     public class Startup
     {
         private IConfiguration Configuration { get; }
-        private const string Version = "v1.1";
+        private const string Version = "v1.3";
 
         public Startup(IConfiguration configuration)
         {
@@ -36,6 +38,7 @@ namespace MergeQueue
                 var settings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
                 return new MongoClient(settings.ConnectionString);
             });
+            services.AddScoped<AuthenticationFilter>();
             services.AddSingleton<IQueueRepository, MongoDbQueueRepository>();
             services.AddSingleton<HttpClient, HttpClient>();
             services.AddControllers()
@@ -61,7 +64,11 @@ namespace MergeQueue
             }
 
             app.UseRouting();
-            app.UseAuthorization();
+            app.Use((context, next) =>
+            {
+                context.Request.EnableBuffering();
+                return next();
+            });
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

@@ -2,6 +2,7 @@
 {
     public class SlackApiSettings
     {
-        public string Token { get; set; }
+        public string BotToken { get; set; }
+        public string SigningSecret { get; set; }
     }
 }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using MergeQueue.Builders;
 using MergeQueue.Dtos;
 using MergeQueue.Entities;
+using MergeQueue.Filters;
 using MergeQueue.Repositories;
 using MergeQueue.Settings;
 using MergeQueue.Types;
@@ -16,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 namespace MergeQueue.Controllers
 {
     [ApiController]
+    [TypeFilter(typeof(AuthenticationFilter))]
     public class BaseController : ControllerBase
     {
         private readonly HttpClient _httpClient;
@@ -30,7 +32,7 @@ namespace MergeQueue.Controllers
                 return;
             }
             var settings = configuration.GetSection(nameof(SlackApiSettings)).Get<SlackApiSettings>();
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.Token}");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.BotToken}");
         }
 
         protected static IEnumerable<SlackBlockDto> CreateShowQueueResponseBlocks(IEnumerable<User> queuedUsers)
