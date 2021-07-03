@@ -31,6 +31,7 @@ namespace MergeQueue.Filters
                 return;
             }
 
+            request.Body.Position = 0;
             string body;
             using (var reader = new StreamReader(request.Body))
             {
