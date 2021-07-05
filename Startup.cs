@@ -19,7 +19,7 @@ namespace MergeQueue
     public class Startup
     {
         private IConfiguration Configuration { get; }
-        private const string Version = "v1.3.1";
+        private const string Version = "v1.3.2";
 
         public Startup(IConfiguration configuration)
         {
