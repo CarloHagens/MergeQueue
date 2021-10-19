@@ -36,6 +36,9 @@ namespace MergeQueue.Controllers
                         break;
                     case Commands.Leave:
                         await LeaveQueue(request);
+                        break; 
+                    case Commands.Jump:
+                        await JumpQueue(request);
                         break;
                 }
             }
@@ -79,6 +82,19 @@ namespace MergeQueue.Controllers
             }
         }
 
+        private async Task JumpQueue(SlackEventSubscriptionRequestDto request)
+        {
+            var user = CreateUserFromEventInputs(request);
+
+            QueueRepository.Jump(user);
+
+            var jumpedTheQueueBody = CreateJumpQueueBody(user);
+            await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, jumpedTheQueueBody);
+
+            var showQueueBody = CreateShowQueueBody(user);
+            await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
+        }
+
         private static User CreateUserFromEventInputs(SlackEventSubscriptionRequestDto request)
         {
             var channelId = request.Event.WorkflowStep.Inputs[InputTypes.SelectedChannel].Value;
@@ -111,6 +127,7 @@ namespace MergeQueue.Controllers
                 .CreateSendMessageRequestToChannel(user.ChannelId)
                 .WithText(responseText);
         }
+
         private static SlackSendMessageRequestDto CreateAlreadyInQueueBody(User user) =>
             SlackSendMessageRequestBuilder
                 .CreateSendMessageRequestToChannel(user.ChannelId)
@@ -132,5 +149,15 @@ namespace MergeQueue.Controllers
                 .CreateSendMessageRequestToChannel(user.ChannelId)
                 .ToUser(user.UserId)
                 .WithText(ResponseMessages.NotInQueue);
+
+        private SlackSendMessageRequestDto CreateJumpQueueBody(User user)
+        {
+            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
+            var responseText = CreateJumpQueueResponseText(user, queuedUsers);
+
+            return SlackSendMessageRequestBuilder
+                .CreateSendMessageRequestToChannel(user.ChannelId)
+                .WithText(responseText);
+        }
     }
 }
