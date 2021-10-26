@@ -89,7 +89,7 @@ namespace MergeQueue.Controllers
             QueueRepository.Jump(user);
 
             var jumpedTheQueueBody = CreateJumpQueueBody(user);
-            await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, jumpedTheQueueBody);
+            await PostToUrlWithBody(SlackApiEndpoints.SendMessage, jumpedTheQueueBody);
 
             var showQueueBody = CreateShowQueueBody(user);
             await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
