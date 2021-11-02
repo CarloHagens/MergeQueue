@@ -61,6 +61,11 @@ namespace MergeQueue.Controllers
             return CreateRemoveQueueResponseText(user, queuedUsers, responseText);
         }
 
+        protected static string CreateJumpQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers) =>
+            queuedUsers.Count == 1
+                ? ResponseMessages.UserFirstInQueue(user.UserId)
+                : ResponseMessages.UserJumpedQueue(user.UserId);
+
         protected async Task PostToUrlWithBody(string url, object body)
         {
             var serializationSettings = new JsonSerializerOptions

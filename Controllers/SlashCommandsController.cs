@@ -55,6 +55,7 @@ namespace MergeQueue.Controllers
             {
                 return Ok(responseBody);
             }
+
             return Ok();
         }
 
@@ -193,9 +194,10 @@ namespace MergeQueue.Controllers
                 .WithText(responseText);
         }
 
-        private static SlackSlashResponseDto CreateJumpQueueBody(User user)
+        private SlackSlashResponseDto CreateJumpQueueBody(User user)
         {
-            var responseText = ResponseMessages.UserJumpedQueue(user.UserId);
+            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
+            var responseText = CreateJumpQueueResponseText(user, queuedUsers);
             return SlackSlashResponseBuilder
                 .CreateChannelResponse()
                 .WithText(responseText);
@@ -208,7 +210,6 @@ namespace MergeQueue.Controllers
             return SlackSlashResponseBuilder
                 .CreateChannelResponse()
                 .WithText(responseText);
-
         }
 
         private SlackSlashResponseDto CreateKickQueueBody(User user)
