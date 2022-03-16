@@ -1,15 +1,10 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+FROM mcr.microsoft.com/dotnet/sdk:6.0 as build
 WORKDIR /app
-EXPOSE 80
-
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /src
-COPY ["MergeQueue.Api.csproj", "./"]
-RUN dotnet restore "MergeQueue.Api.csproj"
 COPY . .
-RUN dotnet publish "MergeQueue.Api.csproj" -c Release -o /app/publish
+RUN dotnet restore
+RUN dotnet publish /p:PublishProfile=FolderProfile -o /app/published-app
 
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 as runtime
 WORKDIR /app
-COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "MergeQueue.Api.dll"]
+COPY --from=build /app/published-app /app
+ENTRYPOINT [ "dotnet", "/app/MergeQueue.Api.dll" ]
