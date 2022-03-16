@@ -132,7 +132,15 @@ namespace MergeQueue.Controllers
 
         private async Task<SlackSlashResponseDto> KickFromQueue(SlackSlashRequestDto request)
         {
-            var userIdToKick = request.text.Split('@')[1].Split('|')[0].Trim();
+            var userIdToKick = request.text.Split('@')[1].Trim();
+            if (userIdToKick.Contains('|'))
+            {
+                userIdToKick = userIdToKick.Split('|')[0].Trim();
+            }
+            else
+            {
+                userIdToKick = userIdToKick.Split('>')[0].Trim();
+            }
             var user = request.ToUserToKick(userIdToKick);
             var body = CreateKickQueueBody(user);
             var wasPersonRemoved = QueueRepository.RemoveUser(user);

@@ -29,7 +29,11 @@ namespace MergeQueue.Extensions
 
         public static string GetKickCommand(this SlackSlashRequestDto slackSlashCommand)
         {
-            if (slackSlashCommand.text != null && slackSlashCommand.text.Contains(' ') && Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*\\|\\w*>"))
+            if (slackSlashCommand.text != null 
+                && slackSlashCommand.text.Contains(' ')
+                && (Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*\\|\\w*>")
+                || Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*>"))
+            )
             {
                 return slackSlashCommand.text?.Split(' ')[0].ToLowerInvariant();
             }
