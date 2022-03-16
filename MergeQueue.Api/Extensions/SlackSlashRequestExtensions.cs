@@ -31,7 +31,7 @@ namespace MergeQueue.Api.Extensions
         {
             if (slackSlashCommand.text != null
                 && slackSlashCommand.text.Contains(' ')
-                && (Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*\\|\\w*>")
+                && (Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*\\|.*>")
                 || Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*>"))
             )
             {

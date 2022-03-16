@@ -74,5 +74,23 @@ namespace MergeQueue.Tests
             // Assert
             Assert.Equal("<@abc123> is not in the queue.", responseBody.Text);
         }
+
+        [Fact]
+        public async Task UserWithPipeAndStrangeCharacters()
+        {
+            // Arrange
+            var user = "kick <@UM9R4UY30|marcin.sak>";
+            var request = new SlackSlashRequestDto
+            {
+                text = user
+            };
+
+            // Act
+            OkObjectResult response = (OkObjectResult)await slashCommandsController.Post(request);
+            SlackSlashResponseDto responseBody = response.Value as SlackSlashResponseDto;
+
+            // Assert
+            Assert.Equal("<@UM9R4UY30> is not in the queue.", responseBody.Text);
+        }
     }
 }
