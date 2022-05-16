@@ -9,16 +9,17 @@ namespace MergeQueue.Api.Repositories
     {
         private const string DatabaseName = "queue";
         private const string CollectionName = "users";
-        private readonly IMongoClient _mongoClient;
-        private readonly SemaphoreSlim semaphoreSlim = new(1, 1);
+        private readonly IMongoCollection<User> _userCollection;
+
         public MongoDbQueueRepository(IMongoClient mongoClient)
         {
-            _mongoClient = mongoClient;
+            var database = mongoClient.GetDatabase(DatabaseName);
+            _userCollection = database.GetCollection<User>(CollectionName);
         }
 
         public async Task<List<User>> GetUsersForChannel(string channelId)
         {
-            var users = await GetUserCollection().FindAsync(user => user.ChannelId == channelId);
+            var users = await _userCollection.FindAsync(user => user.ChannelId == channelId);
             return users.ToList();
         }
 
@@ -29,7 +30,7 @@ namespace MergeQueue.Api.Repositories
                 .Set(user => user.UserId, userToAdd.UserId)
                 .Set(user => user.ChannelId, userToAdd.ChannelId);
 
-            var updateResult = await GetUserCollection().UpdateOneAsync(
+            var updateResult = await _userCollection.UpdateOneAsync(
                 user => user.ChannelId == userToAdd.ChannelId
                 && user.UserId == userToAdd.UserId,
                 updateDefinition,
@@ -41,7 +42,7 @@ namespace MergeQueue.Api.Repositories
 
         public async Task<bool> RemoveUser(User userToRemove)
         {
-            var deleteResult = await GetUserCollection().DeleteOneAsync(
+            var deleteResult = await _userCollection.DeleteOneAsync(
                 user => user.ChannelId == userToRemove.ChannelId
                 && user.UserId == userToRemove.UserId
             );
@@ -51,32 +52,16 @@ namespace MergeQueue.Api.Repositories
 
         public async Task Jump(User user)
         {
-            using var session = await _mongoClient.StartSessionAsync();
-            session.StartTransaction();
-            try
+            var usersForChannel = await GetUsersForChannel(user.ChannelId);
+            foreach (var userInChannel in usersForChannel)
             {
-                var usersForChannel = await GetUsersForChannel(user.ChannelId);
-                foreach (var userInChannel in usersForChannel)
-                {
-                    await RemoveUser(userInChannel);
-                }
-                await AddUser(user);
-                foreach (var userInChannel in usersForChannel)
-                {
-                    await AddUser(userInChannel);
-                }
+                await RemoveUser(userInChannel);
             }
-            catch (Exception)
+            await AddUser(user);
+            foreach (var userInChannel in usersForChannel)
             {
-                await session.AbortTransactionAsync();
+                await AddUser(userInChannel);
             }
-            await session.CommitTransactionAsync();
-        }
-
-        private IMongoCollection<User> GetUserCollection()
-        {
-            var database = _mongoClient.GetDatabase(DatabaseName);
-            return database.GetCollection<User>(CollectionName);
         }
     }
 }
