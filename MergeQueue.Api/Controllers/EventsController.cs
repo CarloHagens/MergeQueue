@@ -66,6 +66,7 @@ namespace MergeQueue.Api.Controllers
         private async Task LeaveQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
+            var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
             var wasUserRemoved = await QueueRepository.RemoveUser(user);
 
             if (!wasUserRemoved)
@@ -75,7 +76,6 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
                 var leaveQueueBody = CreateLeaveQueueBody(user, queuedUsers);
                 await PostToUrlWithBody(SlackApiEndpoints.SendMessage, leaveQueueBody);
             }

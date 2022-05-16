@@ -47,13 +47,13 @@ namespace MergeQueue.Api.Controllers
         protected static string CreateLeaveQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers)
         {
             var responseText = ResponseMessages.UserLeftQueue(user.UserId);
-            return CreateRemoveQueueResponseText(queuedUsers, responseText);
+            return CreateRemoveQueueResponseText(user, queuedUsers, responseText);
         }
 
         protected static string CreateKickQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers)
         {
             var responseText = ResponseMessages.UserKickedFromTheQueue(user.UserId);
-            return CreateRemoveQueueResponseText(queuedUsers, responseText);
+            return CreateRemoveQueueResponseText(user, queuedUsers, responseText);
         }
 
         protected static string CreateJumpQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers) =>
@@ -73,12 +73,20 @@ namespace MergeQueue.Api.Controllers
             await _httpClient.PostAsync(url, content);
         }
 
-        private static string CreateRemoveQueueResponseText(IReadOnlyCollection<User> queuedUsers, string responseText)
+        // This method expects the queue before the to be removed user is removed.
+        private static string CreateRemoveQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers, string responseText)
         {
-            if (queuedUsers.Count > 0)
+            // In case queue was already empty then the queue order does not change. If user to be removed is not first in queue then the queue order does not change.
+            if (queuedUsers.Count == 0 || queuedUsers.First().UserId != user.UserId)
+            {
+                return responseText;
+            }
+            // If there is more than 1 user and the user was first in the queue then the order of the queue changes.
+            if (queuedUsers.Count > 1)
             {
                 responseText += ResponseMessages.UserTurnArrived(queuedUsers.First().UserId);
             }
+            // If there was only 1 user in the queue then it is now empty.
             else
             {
                 responseText += ResponseMessages.QueueNowEmpty;

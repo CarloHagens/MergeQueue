@@ -110,6 +110,7 @@ namespace MergeQueue.Api.Controllers
         private async Task<SlackSlashResponseDto?> LeaveQueue(SlackSlashRequestDto request)
         {
             var user = request.ToUser();
+            var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
             var wasUserRemoved = await QueueRepository.RemoveUser(user);
 
             SlackSlashResponseDto? responseBody = null;
@@ -121,7 +122,6 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
                 var leaveQueueBody = CreateLeaveQueueBody(user, users);
                 await PostToUrlWithBody(request.response_url, leaveQueueBody);
             }
@@ -141,6 +141,7 @@ namespace MergeQueue.Api.Controllers
                 userIdToKick = userIdToKick.Split('>')[0].Trim();
             }
             var user = request.ToUserToKick(userIdToKick);
+            var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
             var wasPersonRemoved = await QueueRepository.RemoveUser(user);
 
             SlackSlashResponseDto? responseBody = null;
@@ -152,7 +153,6 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
                 var body = CreateKickQueueBody(user, users);
                 await PostToUrlWithBody(request.response_url, body);
             }
