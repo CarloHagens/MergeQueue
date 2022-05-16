@@ -1,9 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using MergeQueue.Api.Builders;
 using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Entities;
@@ -12,7 +8,6 @@ using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Settings;
 using MergeQueue.Api.Types;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace MergeQueue.Api.Controllers
 {
@@ -52,13 +47,13 @@ namespace MergeQueue.Api.Controllers
         protected static string CreateLeaveQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers)
         {
             var responseText = ResponseMessages.UserLeftQueue(user.UserId);
-            return CreateRemoveQueueResponseText(user, queuedUsers, responseText);
+            return CreateRemoveQueueResponseText(queuedUsers, responseText);
         }
 
         protected static string CreateKickQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers)
         {
             var responseText = ResponseMessages.UserKickedFromTheQueue(user.UserId);
-            return CreateRemoveQueueResponseText(user, queuedUsers, responseText);
+            return CreateRemoveQueueResponseText(queuedUsers, responseText);
         }
 
         protected static string CreateJumpQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers) =>
@@ -70,7 +65,7 @@ namespace MergeQueue.Api.Controllers
         {
             var serializationSettings = new JsonSerializerOptions
             {
-                IgnoreNullValues = true,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 PropertyNamingPolicy = new SnakeCaseNamingPolicy()
             };
             var serializedBody = JsonSerializer.Serialize(body, serializationSettings);
@@ -78,16 +73,11 @@ namespace MergeQueue.Api.Controllers
             await _httpClient.PostAsync(url, content);
         }
 
-        private static string CreateRemoveQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers, string responseText)
+        private static string CreateRemoveQueueResponseText(IReadOnlyCollection<User> queuedUsers, string responseText)
         {
-            if (queuedUsers.Count <= 0 || queuedUsers.First().UserId != user.UserId)
+            if (queuedUsers.Count > 0)
             {
-                return responseText;
-            }
-
-            if (queuedUsers.Count > 1)
-            {
-                responseText += ResponseMessages.UserTurnArrived(queuedUsers.Skip(1).First().UserId);
+                responseText += ResponseMessages.UserTurnArrived(queuedUsers.First().UserId);
             }
             else
             {

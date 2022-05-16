@@ -20,7 +20,7 @@ namespace MergeQueue.Tests
         public KickCommandTests()
         {
             var mockRepo = new Mock<IQueueRepository>();
-            mockRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).Returns(
+            mockRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).ReturnsAsync(
                     new List<User> 
                     {
                         new User

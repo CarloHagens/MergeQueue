@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using MergeQueue.Api.Dtos;
+﻿using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Types;
 
 namespace MergeQueue.Api.Builders

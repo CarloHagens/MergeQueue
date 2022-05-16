@@ -1,13 +1,12 @@
-﻿using System.Collections.Generic;
-using MergeQueue.Api.Entities;
+﻿using MergeQueue.Api.Entities;
 
 namespace MergeQueue.Api.Repositories
 {
     public interface IQueueRepository
     {
-        List<User> GetUsersForChannel(string channelId);
-        bool AddUser(User userToAdd);
-        bool RemoveUser(User userToRemove);
-        void Jump(User user);
+        Task<List<User>> GetUsersForChannel(string channelId);
+        Task<bool> AddUser(User userToAdd);
+        Task<bool> RemoveUser(User userToRemove);
+        Task Jump(User user);
     }
 }

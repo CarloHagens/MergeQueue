@@ -1,14 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Types;
 using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Builders;
+using System.Text.Json.Serialization;
 
 namespace MergeQueue.Api.Controllers
 {
@@ -27,7 +23,7 @@ namespace MergeQueue.Api.Controllers
 
             if (requestObject?.Type == SlackInteractivityTypes.WorkflowStepEdit)
             {
-                await OpenView(requestObject?.TriggerId);
+                await OpenView(requestObject.TriggerId);
             }
             else if (requestObject?.Type == SlackInteractivityTypes.ViewSubmission)
             {
@@ -43,11 +39,11 @@ namespace MergeQueue.Api.Controllers
             return Ok();
         }
 
-        private static SlackInteractivityRequestPayloadDto DeserializePayload(SlackInteractivityRequestDto request)
+        private static SlackInteractivityRequestPayloadDto? DeserializePayload(SlackInteractivityRequestDto request)
         {
             var serializationSettings = new JsonSerializerOptions
             {
-                IgnoreNullValues = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                 PropertyNamingPolicy = new SnakeCaseNamingPolicy()
             };
             return JsonSerializer.Deserialize<SlackInteractivityRequestPayloadDto>(request.payload, serializationSettings);

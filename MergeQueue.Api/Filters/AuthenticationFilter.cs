@@ -1,13 +1,9 @@
-﻿using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using MergeQueue.Api.Extensions;
 using MergeQueue.Api.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Configuration;
 
 namespace MergeQueue.Api.Filters
 {

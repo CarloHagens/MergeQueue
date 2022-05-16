@@ -1,7 +1,4 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Mvc;
 using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Types;
 using MergeQueue.Api.Dtos;
@@ -49,7 +46,7 @@ namespace MergeQueue.Api.Controllers
         private async Task JoinQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var wasUserAdded = QueueRepository.AddUser(user);
+            var wasUserAdded = await QueueRepository.AddUser(user);
 
             if (!wasUserAdded)
             {
@@ -58,8 +55,9 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var joinQueueBody = CreateJoinQueueBody(user);
-                var showQueueBody = CreateShowQueueBody(user);
+                var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var joinQueueBody = CreateJoinQueueBody(user, queuedUsers);
+                var showQueueBody = CreateShowQueueBody(user, queuedUsers);
                 await PostToUrlWithBody(SlackApiEndpoints.SendMessage, joinQueueBody);
                 await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
             }
@@ -68,8 +66,7 @@ namespace MergeQueue.Api.Controllers
         private async Task LeaveQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var leaveQueueBody = CreateLeaveQueueBody(user);
-            var wasUserRemoved = QueueRepository.RemoveUser(user);
+            var wasUserRemoved = await QueueRepository.RemoveUser(user);
 
             if (!wasUserRemoved)
             {
@@ -78,6 +75,8 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
+                var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var leaveQueueBody = CreateLeaveQueueBody(user, queuedUsers);
                 await PostToUrlWithBody(SlackApiEndpoints.SendMessage, leaveQueueBody);
             }
         }
@@ -85,13 +84,13 @@ namespace MergeQueue.Api.Controllers
         private async Task JumpQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
+            await QueueRepository.Jump(user);
 
-            QueueRepository.Jump(user);
-
-            var jumpedTheQueueBody = CreateJumpQueueBody(user);
+            var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
+            var jumpedTheQueueBody = CreateJumpQueueBody(user, queuedUsers);
             await PostToUrlWithBody(SlackApiEndpoints.SendMessage, jumpedTheQueueBody);
 
-            var showQueueBody = CreateShowQueueBody(user);
+            var showQueueBody = CreateShowQueueBody(user, queuedUsers);
             await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
         }
 
@@ -107,9 +106,8 @@ namespace MergeQueue.Api.Controllers
             };
         }
 
-        private SlackSendMessageRequestDto CreateShowQueueBody(User user)
+        private SlackSendMessageRequestDto CreateShowQueueBody(User user, List<User> queuedUsers)
         {
-            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
             var blockOfUsers = CreateShowQueueResponseBlocks(queuedUsers);
 
             return SlackSendMessageRequestBuilder
@@ -118,9 +116,8 @@ namespace MergeQueue.Api.Controllers
                 .WithBlocks(blockOfUsers);
         }
 
-        private SlackSendMessageRequestDto CreateJoinQueueBody(User user)
+        private SlackSendMessageRequestDto CreateJoinQueueBody(User user, List<User> queuedUsers)
         {
-            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
             var responseText = CreateJoinQueueResponseText(user, queuedUsers);
 
             return SlackSendMessageRequestBuilder
@@ -134,9 +131,8 @@ namespace MergeQueue.Api.Controllers
                 .ToUser(user.UserId)
                 .WithText(ResponseMessages.AlreadyInQueue);
 
-        private SlackSendMessageRequestDto CreateLeaveQueueBody(User user)
+        private SlackSendMessageRequestDto CreateLeaveQueueBody(User user, List<User> queuedUsers)
         {
-            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
             var responseText = CreateLeaveQueueResponseText(user, queuedUsers);
 
             return SlackSendMessageRequestBuilder
@@ -150,9 +146,8 @@ namespace MergeQueue.Api.Controllers
                 .ToUser(user.UserId)
                 .WithText(ResponseMessages.NotInQueue);
 
-        private SlackSendMessageRequestDto CreateJumpQueueBody(User user)
+        private SlackSendMessageRequestDto CreateJumpQueueBody(User user, List<User> queuedUsers)
         {
-            var queuedUsers = QueueRepository.GetUsersForChannel(user.ChannelId);
             var responseText = CreateJumpQueueResponseText(user, queuedUsers);
 
             return SlackSendMessageRequestBuilder

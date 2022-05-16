@@ -24,21 +24,21 @@ namespace MergeQueue.Api.Extensions
             };
         }
 
-        public static string GetCommand(this SlackSlashRequestDto slackSlashCommand)
+        public static string? GetCommand(this SlackSlashRequestDto slackSlashCommand)
             => slackSlashCommand.text?.ToLowerInvariant();
 
-        public static string GetKickCommand(this SlackSlashRequestDto slackSlashCommand)
+        public static string? GetKickCommand(this SlackSlashRequestDto slackSlashCommand)
         {
-            if (slackSlashCommand.text != null
+            if (slackSlashCommand.text.Exists()
                 && slackSlashCommand.text.Contains(' ')
                 && (Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*\\|.*>")
                 || Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*>"))
             )
             {
-                return slackSlashCommand.text?.Split(' ')[0].ToLowerInvariant();
+                return slackSlashCommand.text.Split(' ')[0].ToLowerInvariant();
             }
 
-            return slackSlashCommand.text;
+            return null;
         }
     }
 }

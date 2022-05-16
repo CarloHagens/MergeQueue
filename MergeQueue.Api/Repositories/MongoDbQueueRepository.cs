@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using MergeQueue.Api.Entities;
+﻿using MergeQueue.Api.Entities;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 
@@ -10,65 +9,74 @@ namespace MergeQueue.Api.Repositories
     {
         private const string DatabaseName = "queue";
         private const string CollectionName = "users";
-        private readonly IMongoCollection<User> _userCollection;
-
+        private readonly IMongoClient _mongoClient;
+        private readonly SemaphoreSlim semaphoreSlim = new(1, 1);
         public MongoDbQueueRepository(IMongoClient mongoClient)
         {
-            var database = mongoClient.GetDatabase(DatabaseName);
-            _userCollection = database.GetCollection<User>(CollectionName);
+            _mongoClient = mongoClient;
         }
 
-        public List<User> GetUsersForChannel(string channelId)
+        public async Task<List<User>> GetUsersForChannel(string channelId)
         {
-            var builder = Builders<User>.Filter;
-            var filter = builder.Eq(user => user.ChannelId, channelId);
-            return _userCollection.Find(filter).ToList();
+            var users = await GetUserCollection().FindAsync(user => user.ChannelId == channelId);
+            return users.ToList();
         }
 
-        public bool AddUser(User userToAdd)
+        public async Task<bool> AddUser(User userToAdd)
         {
-            var builder = Builders<User>.Filter;
-            var filter = builder.And(
-                builder.Eq(user => user.ChannelId, userToAdd.ChannelId),
-                builder.Eq(user => user.UserId, userToAdd.UserId));
-            if (_userCollection.Find(filter).Any())
-            {
-                return false;
-            }
-            _userCollection.InsertOne(userToAdd);
-            return true;
+            var builder = Builders<User>.Update;
+            var updateDefinition = builder
+                .Set(user => user.UserId, userToAdd.UserId)
+                .Set(user => user.ChannelId, userToAdd.ChannelId);
+
+            var updateResult = await GetUserCollection().UpdateOneAsync(
+                user => user.ChannelId == userToAdd.ChannelId
+                && user.UserId == userToAdd.UserId,
+                updateDefinition,
+                new UpdateOptions { IsUpsert = true }
+            );
+
+            return updateResult.IsAcknowledged && updateResult.MatchedCount == 0;
         }
 
-        public bool RemoveUser(User userToRemove)
+        public async Task<bool> RemoveUser(User userToRemove)
         {
-            var builder = Builders<User>.Filter;
-            var filter = builder.And(
-                builder.Eq(user => user.ChannelId, userToRemove.ChannelId),
-                builder.Eq(user => user.UserId, userToRemove.UserId));
+            var deleteResult = await GetUserCollection().DeleteOneAsync(
+                user => user.ChannelId == userToRemove.ChannelId
+                && user.UserId == userToRemove.UserId
+            );
 
-            var foundUsers = _userCollection.Find(filter).ToList();
-
-            if (foundUsers.Count == 0)
-            {
-                return false;
-            }
-
-            _userCollection.DeleteOne(filter);
-            return true;
+            return deleteResult.IsAcknowledged && deleteResult.DeletedCount == 1;
         }
 
-        public void Jump(User user)
+        public async Task Jump(User user)
         {
-            var usersForChannel = GetUsersForChannel(user.ChannelId);
-            foreach (var userInChannel in usersForChannel)
+            using var session = await _mongoClient.StartSessionAsync();
+            session.StartTransaction();
+            try
             {
-                RemoveUser(userInChannel);
+                var usersForChannel = await GetUsersForChannel(user.ChannelId);
+                foreach (var userInChannel in usersForChannel)
+                {
+                    await RemoveUser(userInChannel);
+                }
+                await AddUser(user);
+                foreach (var userInChannel in usersForChannel)
+                {
+                    await AddUser(userInChannel);
+                }
             }
-            AddUser(user);
-            foreach (var userInChannel in usersForChannel)
+            catch (Exception)
             {
-                AddUser(userInChannel);
+                await session.AbortTransactionAsync();
             }
+            await session.CommitTransactionAsync();
+        }
+
+        private IMongoCollection<User> GetUserCollection()
+        {
+            var database = _mongoClient.GetDatabase(DatabaseName);
+            return database.GetCollection<User>(CollectionName);
         }
     }
 }

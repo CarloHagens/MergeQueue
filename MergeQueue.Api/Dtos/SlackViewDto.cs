@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MergeQueue.Api.Dtos
+﻿namespace MergeQueue.Api.Dtos
 {
     public class SlackViewResponseDto
     {
