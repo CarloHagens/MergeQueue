@@ -84,7 +84,7 @@ namespace MergeQueue.Api.Controllers
             // If there is more than 1 user and the user was first in the queue then the order of the queue changes.
             if (queuedUsers.Count > 1)
             {
-                responseText += ResponseMessages.UserTurnArrived(queuedUsers.First().UserId);
+                responseText += ResponseMessages.UserTurnArrived(queuedUsers.Skip(1).First().UserId);
             }
             // If there was only 1 user in the queue then it is now empty.
             else
