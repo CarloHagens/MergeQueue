@@ -78,10 +78,11 @@ namespace MergeQueue.Api.Controllers
             var user = request.ToUser();
             bool wasUserAdded;
 
+            var position = -1;
             if (request.text.Contains(' '))
             {
-                var position = request.text.Split(' ')[1];
-                wasUserAdded = await QueueRepository.AddUser(user, Convert.ToInt32(position));
+                position = Convert.ToInt32(request.text.Split(' ')[1]);
+                wasUserAdded = await QueueRepository.AddUser(user, position);
             }
             else
             {
@@ -98,7 +99,7 @@ namespace MergeQueue.Api.Controllers
             else
             {
                 var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
-                var joinQueueBody = CreateJoinQueueBody(user, users);
+                var joinQueueBody = CreateJoinQueueBody(user, users, position);
                 await PostToUrlWithBody(request.response_url, joinQueueBody);
                 responseBody = CreateShowQueueBody(users);
             }
@@ -112,7 +113,7 @@ namespace MergeQueue.Api.Controllers
             var wasUserAdded = await QueueRepository.AddUser(user, 1);
 
             SlackSlashResponseDto responseBody;
-            if(!wasUserAdded)
+            if (!wasUserAdded)
             {
                 responseBody = SlackSlashResponseBuilder
                     .CreateEphemeralResponse()
@@ -206,11 +207,16 @@ namespace MergeQueue.Api.Controllers
                 .WithBlocks(blockOfUsers);
         }
 
-        private SlackSlashResponseDto CreateJoinQueueBody(User user, List<User> users)
+        private SlackSlashResponseDto CreateJoinQueueBody(User user, List<User> users, int position)
         {
             var responseText = users.Count == 1
                 ? ResponseMessages.UserFirstInQueue(user.UserId)
                 : ResponseMessages.UserJoinedQueue(user.UserId);
+
+            if(position >= 1)
+            {
+                responseText = ResponseMessages.UserJoinedQueueAtPosition(user.UserId, position);
+            }
 
             return SlackSlashResponseBuilder
                 .CreateChannelResponse()

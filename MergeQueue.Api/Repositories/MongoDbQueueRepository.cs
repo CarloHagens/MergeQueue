@@ -78,7 +78,8 @@ namespace MergeQueue.Api.Repositories
                 }
                 else
                 {
-                    await AddUser(usersForChannel[usersInserted]);
+                    var index = newUserInserted ? usersInserted - 1 : usersInserted;
+                    await AddUser(usersForChannel[index]);
                 }
                 usersInserted++;
             }

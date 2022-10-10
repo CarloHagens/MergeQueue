@@ -20,6 +20,7 @@ namespace MergeQueue.Api.Types
         public static string UserKickedFromTheQueue(string userId) => $"<@{userId}> was kicked from the queue.";
         public static string UserFirstInQueue(string userId) => $"<@{userId}> is now first in the queue!";
         public static string UserJoinedQueue(string userId) => $"<@{userId}> joined the queue.";
+        public static string UserJoinedQueueAtPosition(string userId, int position) => $"<@{userId}> joined the queue at position {position}.";
         public static string UserJumpedQueue(string userId) => $"<@{userId}> jumped the queue and is now first!";
         public static string UserQueuePosition(int queuePosition, string userId) => $"{SlackNumberEmojis.From(queuePosition + 1)} <@{userId}>";
         public static string UserTurnArrived(string userId) => $"\n<@{userId}> it is now your turn!";
@@ -34,5 +35,6 @@ namespace MergeQueue.Api.Types
                                               $"`/queue {Commands.Jump}` - Jump to the first position in the queue\n" +
                                               $"`/queue {Commands.Kick} @user` - Kick user from the queue\n" +
                                               $"`/queue {Commands.Help}` - Show all available commands";
+
     }
 }
