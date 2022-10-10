@@ -84,14 +84,23 @@ namespace MergeQueue.Api.Controllers
         private async Task JumpQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            await QueueRepository.Jump(user);
+            var wasUserAdded = await QueueRepository.AddUser(user, 1);
 
-            var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
-            var jumpedTheQueueBody = CreateJumpQueueBody(user, queuedUsers);
-            await PostToUrlWithBody(SlackApiEndpoints.SendMessage, jumpedTheQueueBody);
+            if (!wasUserAdded)
+            {
+                var alreadyInQueueBody = CreateAlreadyInQueueAtThatPositioonBody(user);
+                await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, alreadyInQueueBody);
+            }
+            else
+            {
 
-            var showQueueBody = CreateShowQueueBody(user, queuedUsers);
-            await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
+                var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var jumpedTheQueueBody = CreateJumpQueueBody(user, queuedUsers);
+                await PostToUrlWithBody(SlackApiEndpoints.SendMessage, jumpedTheQueueBody);
+
+                var showQueueBody = CreateShowQueueBody(user, queuedUsers);
+                await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
+            }
         }
 
         private static User CreateUserFromEventInputs(SlackEventSubscriptionRequestDto request)
@@ -130,6 +139,12 @@ namespace MergeQueue.Api.Controllers
                 .CreateSendMessageRequestToChannel(user.ChannelId)
                 .ToUser(user.UserId)
                 .WithText(ResponseMessages.AlreadyInQueue);
+
+        private static SlackSendMessageRequestDto CreateAlreadyInQueueAtThatPositioonBody(User user) =>
+            SlackSendMessageRequestBuilder
+                .CreateSendMessageRequestToChannel(user.ChannelId)
+                .ToUser(user.UserId)
+                .WithText(ResponseMessages.AlreadyInQueueAtThatPosition);
 
         private SlackSendMessageRequestDto CreateLeaveQueueBody(User user, List<User> queuedUsers)
         {

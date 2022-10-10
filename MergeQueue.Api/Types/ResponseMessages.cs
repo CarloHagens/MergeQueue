@@ -7,6 +7,7 @@ namespace MergeQueue.Api.Types
     {
         public static string QueueIsEmpty => "The queue is currently empty.";
         public static string AlreadyInQueue => "You are already in the queue.";
+        public static string AlreadyInQueueAtThatPosition => "You are either already in the queue at that position, or the position you specified is invalid.";
         public static string NotInQueue => "You are not in the queue.";
         public static string QueueNowEmpty => " It is now empty.";
         public static string SelectChannel => "Select a channel from the list.";
@@ -28,6 +29,7 @@ namespace MergeQueue.Api.Types
         public static string QueueCommands = "" +
                                               $"`/queue {Commands.Show}` - Show a queue for this channel\n" +
                                               $"`/queue {Commands.Join}` - Join the queue\n" +
+                                              $"`/queue {Commands.Join} 2` - Join the queue at the specified position\n" +
                                               $"`/queue {Commands.Leave}` - Leave the queue\n" +
                                               $"`/queue {Commands.Jump}` - Jump to the first position in the queue\n" +
                                               $"`/queue {Commands.Kick} @user` - Kick user from the queue\n" +

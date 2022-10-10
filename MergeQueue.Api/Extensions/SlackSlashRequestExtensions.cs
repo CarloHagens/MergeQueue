@@ -27,12 +27,26 @@ namespace MergeQueue.Api.Extensions
         public static string? GetCommand(this SlackSlashRequestDto slackSlashCommand)
             => slackSlashCommand.text?.ToLowerInvariant();
 
+        public static string? GetJoinCommand(this SlackSlashRequestDto slackSlashCommand)
+        {
+            if (slackSlashCommand.text.Exists() 
+                && slackSlashCommand.text.Contains(' ')
+                && Regex.IsMatch(slackSlashCommand.text, "^join \\d+$")) {
+                return slackSlashCommand.text.Split(' ')[0].ToLowerInvariant();
+            }
+            else if (slackSlashCommand.text.Exists()
+                && Regex.IsMatch(slackSlashCommand.text, "^join$")) {
+                return slackSlashCommand.text.ToLowerInvariant();
+            }
+            return null;
+        }
+
         public static string? GetKickCommand(this SlackSlashRequestDto slackSlashCommand)
         {
             if (slackSlashCommand.text.Exists()
                 && slackSlashCommand.text.Contains(' ')
-                && (Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*\\|.*>")
-                || Regex.IsMatch(slackSlashCommand.text, "kick <@\\w*>"))
+                && (Regex.IsMatch(slackSlashCommand.text, "^kick <@\\w*\\|.*>$")
+                || Regex.IsMatch(slackSlashCommand.text, "^kick <@\\w*>$"))
             )
             {
                 return slackSlashCommand.text.Split(' ')[0].ToLowerInvariant();

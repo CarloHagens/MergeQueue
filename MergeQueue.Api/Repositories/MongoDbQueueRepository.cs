@@ -40,6 +40,52 @@ namespace MergeQueue.Api.Repositories
             return updateResult.IsAcknowledged && updateResult.MatchedCount == 0;
         }
 
+        public async Task<bool> AddUser(User userToAdd, int position)
+        {
+            var usersForChannel = await GetUsersForChannel(userToAdd.ChannelId);
+            var existingPosition = usersForChannel.FindIndex(
+                user => user.UserId == userToAdd.UserId 
+                && user.ChannelId == userToAdd.ChannelId);
+            if (existingPosition >= 0 && position - 1 == existingPosition 
+                || position > usersForChannel.Count)
+            {
+                return false;
+            }
+
+
+            foreach (var userInChannel in usersForChannel)
+            {
+                await RemoveUser(userInChannel);
+            }
+
+            if (existingPosition >= 0)
+            {
+                var existingUser = usersForChannel.Find(
+                    user => user.UserId == userToAdd.UserId 
+                    && user.ChannelId == userToAdd.ChannelId);
+                usersForChannel.Remove(existingUser);
+            }
+
+            var newUserInserted = false;
+            var usersInserted = 0;
+
+            while (usersInserted != usersForChannel.Count + 1)
+            {
+                if (position == usersInserted + 1 && !newUserInserted)
+                {
+                    await AddUser(userToAdd);
+                    newUserInserted = true;
+                }
+                else
+                {
+                    await AddUser(usersForChannel[usersInserted]);
+                }
+                usersInserted++;
+            }
+
+            return true;
+        }
+
         public async Task<bool> RemoveUser(User userToRemove)
         {
             var deleteResult = await _userCollection.DeleteOneAsync(
@@ -48,20 +94,6 @@ namespace MergeQueue.Api.Repositories
             );
 
             return deleteResult.IsAcknowledged && deleteResult.DeletedCount == 1;
-        }
-
-        public async Task Jump(User user)
-        {
-            var usersForChannel = await GetUsersForChannel(user.ChannelId);
-            foreach (var userInChannel in usersForChannel)
-            {
-                await RemoveUser(userInChannel);
-            }
-            await AddUser(user);
-            foreach (var userInChannel in usersForChannel)
-            {
-                await AddUser(userInChannel);
-            }
         }
     }
 }

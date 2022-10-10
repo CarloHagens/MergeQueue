@@ -24,7 +24,7 @@ namespace MergeQueue.Api.Controllers
             {
                 responseBody = await ShowQueue(request);
             }
-            else if (request.GetCommand() == Commands.Join)
+            else if (request.GetJoinCommand() == Commands.Join)
             {
                 responseBody = await JoinQueue(request);
             }
@@ -76,7 +76,17 @@ namespace MergeQueue.Api.Controllers
         private async Task<SlackSlashResponseDto> JoinQueue(SlackSlashRequestDto request)
         {
             var user = request.ToUser();
-            var wasUserAdded = await QueueRepository.AddUser(user);
+            bool wasUserAdded;
+
+            if (request.text.Contains(' '))
+            {
+                var position = request.text.Split(' ')[1];
+                wasUserAdded = await QueueRepository.AddUser(user, Convert.ToInt32(position));
+            }
+            else
+            {
+                wasUserAdded = await QueueRepository.AddUser(user);
+            }
 
             SlackSlashResponseDto responseBody;
             if (!wasUserAdded)
@@ -99,12 +109,23 @@ namespace MergeQueue.Api.Controllers
         private async Task<SlackSlashResponseDto> JumpQueue(SlackSlashRequestDto request)
         {
             var user = request.ToUser();
-            await QueueRepository.Jump(user);
+            var wasUserAdded = await QueueRepository.AddUser(user, 1);
 
-            var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
-            var body = CreateJumpQueueBody(user, users);
-            await PostToUrlWithBody(request.response_url, body);
-            return CreateShowQueueBody(users);
+            SlackSlashResponseDto responseBody;
+            if(!wasUserAdded)
+            {
+                responseBody = SlackSlashResponseBuilder
+                    .CreateEphemeralResponse()
+                    .WithText(ResponseMessages.AlreadyInQueueAtThatPosition);
+            }
+            else
+            {
+                var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var body = CreateJumpQueueBody(user, users);
+                await PostToUrlWithBody(request.response_url, body);
+                responseBody = CreateShowQueueBody(users);
+            }
+            return responseBody;
         }
 
         private async Task<SlackSlashResponseDto?> LeaveQueue(SlackSlashRequestDto request)
