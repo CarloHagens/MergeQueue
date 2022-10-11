@@ -74,7 +74,7 @@ namespace MergeQueue.Api.Controllers
         }
 
         // This method expects the queue before the to be removed user is removed.
-        private static string CreateRemoveQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers, string responseText)
+        protected static string CreateRemoveQueueResponseText(User user, IReadOnlyCollection<User> queuedUsers, string responseText)
         {
             // In case queue was already empty then the queue order does not change. If user to be removed is not first in queue then the queue order does not change.
             if (queuedUsers.Count == 0 || queuedUsers.First().UserId != user.UserId)

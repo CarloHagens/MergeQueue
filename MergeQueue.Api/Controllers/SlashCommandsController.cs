@@ -209,13 +209,12 @@ namespace MergeQueue.Api.Controllers
 
         private SlackSlashResponseDto CreateJoinQueueBody(User user, List<User> users, int position)
         {
-            var responseText = users.Count == 1
-                ? ResponseMessages.UserFirstInQueue(user.UserId)
-                : ResponseMessages.UserJoinedQueue(user.UserId);
+            var responseText = CreateJoinQueueResponseText(user, users);
 
             if(position >= 1)
             {
                 responseText = ResponseMessages.UserJoinedQueueAtPosition(user.UserId, position);
+                responseText = CreateRemoveQueueResponseText(user, users, responseText);
             }
 
             return SlackSlashResponseBuilder
