@@ -7,11 +7,25 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using Serilog;
+using Serilog.Events;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
-var version = "v1.4.1";
+var version = "v1.7.7";
 
 // Add services to the container.
+
+builder.Logging.ClearProviders();
+Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .WriteTo.Debug()
+            .CreateLogger();
+
+builder.Host.UseSerilog();
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
@@ -21,9 +35,11 @@ builder.Services.AddSingleton<IMongoClient>(_ =>
     var settings = builder.Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
     return new MongoClient(settings.ConnectionString);
 });
+
+builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
 builder.Services.AddScoped<AuthenticationFilter>();
-builder.Services.AddSingleton<IQueueRepository, MongoDbQueueRepository>();
-builder.Services.AddSingleton<HttpClient, HttpClient>();
+builder.Services.AddScoped<HttpClient>();
+builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
 
 builder.Services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
                 .AddJsonOptions(options =>
@@ -45,14 +61,33 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint($"/swagger/{version}/swagger.json", $"MergeQueue {version}"));
 }
-
-app.UseRouting();
-app.Use((context, next) =>
+app.Use(async (context, next) =>
 {
     context.Request.EnableBuffering();
-    return next();
+    await next();
 });
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = async (diagnosticsContext, httpContext) =>
+    {
+        var request = httpContext.Request;
 
+        request.Headers.TryGetValue("X-Slack-Request-Timestamp", out var slackRequestTimestamp);
+        request.Headers.TryGetValue("X-Slack-Signature", out var slackSignature);
+
+        string body;
+        using (var reader = new StreamReader(request.Body, leaveOpen: true))
+        {
+            body = await reader.ReadToEndAsync();
+            request.Body.Position = 0;
+        }
+
+        diagnosticsContext.Set("SlackRequestTimestamp", slackRequestTimestamp);
+        diagnosticsContext.Set("SlackSignature", slackSignature);
+        diagnosticsContext.Set("RequestBody", body);
+    };
+    options.MessageTemplate = "Method: {RequestMethod} \r\n Path: {RequestPath} \r\n Timestamp: {SlackRequestTimestamp} \r\n Signature: {SlackSignature} \r\n Body: {RequestBody} \r\n Status Code: {StatusCode} \r\n Response Time: {Elapsed}";
+});
+app.UseRouting();
 app.MapControllers();
-
 app.Run();
