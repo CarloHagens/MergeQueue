@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using MergeQueue.Api.Dtos;
 using System.Text.Json.Serialization;
-using MergeQueue.Api.Types;
 
 namespace MergeQueue.Api.Services
 {
@@ -21,28 +20,26 @@ namespace MergeQueue.Api.Services
 
         public async Task OpenView(SlackInteractivityViewOpenDto body)
         {
-            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackApiEndpoints.OpenView, body, jsonSerializerOptions);
+            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackServiceEndpoints.OpenView, body, jsonSerializerOptions);
         }
 
         public async Task UpdateWorkflowStep(SlackInteractivityUpdateStepDto body)
         {
-            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackApiEndpoints.UpdateWorkflowStep, body, jsonSerializerOptions);
+            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackServiceEndpoints.UpdateWorkflowStep, body, jsonSerializerOptions);
         }
 
         public async Task SendMessage(SlackSendMessageRequestDto body)
         {
-            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackApiEndpoints.SendMessage, body, jsonSerializerOptions);
+            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackServiceEndpoints.SendMessage, body, jsonSerializerOptions);
         }
 
         public async Task SendEphemeralMessage(SlackSendMessageRequestDto body)
         {
-            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackApiEndpoints.SendEphemeralMessage, body, jsonSerializerOptions);
+            await httpClientFactory.CreateClient().PostAsJsonAsync(SlackServiceEndpoints.SendEphemeralMessage, body, jsonSerializerOptions);
         }
 
         public async Task SendResponse(string url, SlackSlashResponseDto body)
         {
-            var httpClient = httpClientFactory.CreateClient();
-            httpClient.BaseAddress = new Uri("");
             await httpClientFactory.CreateClient().PostAsJsonAsync(url, body, jsonSerializerOptions);
         }
     }

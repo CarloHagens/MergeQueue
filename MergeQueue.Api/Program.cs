@@ -31,18 +31,17 @@ builder.Host.UseSerilog();
 BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
 
-builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
-builder.Services.AddScoped<AuthenticationFilter>();
-builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
-builder.Services.AddScoped<ISlackService, SlackService>();
-
 builder.Services.AddHttpClient<ISlackService, SlackService>(client =>
 {
-    client.BaseAddress = new Uri("https://slack.com/api");
     var settings = builder.Configuration.GetSection(nameof(SlackApiSettings)).Get<SlackApiSettings>();
     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.BotToken}");
 
 });
+
+builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
+builder.Services.AddScoped<AuthenticationFilter>();
+builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
+builder.Services.AddScoped<ISlackService, SlackService>();
 
 
 builder.Services.AddSingleton<IMongoClient>(_ =>
