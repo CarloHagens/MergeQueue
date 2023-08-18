@@ -5,15 +5,20 @@ using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Entities;
 using MergeQueue.Api.Types;
+using MergeQueue.Api.Services;
 
 namespace MergeQueue.Api.Controllers
 {
     [Route("[controller]")]
     public class SlashCommandsController : BaseController
     {
-        public SlashCommandsController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient)
-            : base(configuration, queueRepository, httpClient)
+        private readonly IQueueRepository queueRepository;
+        private readonly ISlackService slackService;
+
+        public SlashCommandsController(IQueueRepository queueRepository, ISlackService slackService)
         {
+            this.queueRepository = queueRepository;
+            this.slackService = slackService;
         }
 
         [HttpPost]
@@ -56,7 +61,7 @@ namespace MergeQueue.Api.Controllers
 
         private async Task<SlackSlashResponseDto> ShowQueue(SlackSlashRequestDto request)
         {
-            var queuedUsers = await QueueRepository.GetUsersForChannel(request.channel_id);
+            var queuedUsers = await queueRepository.GetUsersForChannel(request.channel_id);
 
             SlackSlashResponseDto responseBody;
             if (queuedUsers.Any())
@@ -82,11 +87,11 @@ namespace MergeQueue.Api.Controllers
             if (request.text.Contains(' '))
             {
                 position = Convert.ToInt32(request.text.Split(' ')[1]);
-                wasUserAdded = await QueueRepository.AddUser(user, position);
+                wasUserAdded = await queueRepository.AddUser(user, position);
             }
             else
             {
-                wasUserAdded = await QueueRepository.AddUser(user);
+                wasUserAdded = await queueRepository.AddUser(user);
             }
 
             SlackSlashResponseDto responseBody;
@@ -98,9 +103,9 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var users = await queueRepository.GetUsersForChannel(user.ChannelId);
                 var joinQueueBody = CreateJoinQueueBody(user, users, position);
-                await PostToUrlWithBody(request.response_url, joinQueueBody);
+                await slackService.SendResponse(request.response_url, joinQueueBody);
                 responseBody = CreateShowQueueBody(users);
             }
 
@@ -110,7 +115,7 @@ namespace MergeQueue.Api.Controllers
         private async Task<SlackSlashResponseDto> JumpQueue(SlackSlashRequestDto request)
         {
             var user = request.ToUser();
-            var wasUserAdded = await QueueRepository.AddUser(user, 1);
+            var wasUserAdded = await queueRepository.AddUser(user, 1);
 
             SlackSlashResponseDto responseBody;
             if (!wasUserAdded)
@@ -121,9 +126,9 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var users = await queueRepository.GetUsersForChannel(user.ChannelId);
                 var body = CreateJumpQueueBody(user, users);
-                await PostToUrlWithBody(request.response_url, body);
+                await slackService.SendResponse(request.response_url, body);
                 responseBody = CreateShowQueueBody(users);
             }
             return responseBody;
@@ -132,8 +137,8 @@ namespace MergeQueue.Api.Controllers
         private async Task<SlackSlashResponseDto?> LeaveQueue(SlackSlashRequestDto request)
         {
             var user = request.ToUser();
-            var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
-            var wasUserRemoved = await QueueRepository.RemoveUser(user);
+            var users = await queueRepository.GetUsersForChannel(user.ChannelId);
+            var wasUserRemoved = await queueRepository.RemoveUser(user);
 
             SlackSlashResponseDto? responseBody = null;
             if (!wasUserRemoved)
@@ -145,7 +150,7 @@ namespace MergeQueue.Api.Controllers
             else
             {
                 var leaveQueueBody = CreateLeaveQueueBody(user, users);
-                await PostToUrlWithBody(request.response_url, leaveQueueBody);
+                await slackService.SendResponse(request.response_url, leaveQueueBody);
             }
 
             return responseBody;
@@ -163,8 +168,8 @@ namespace MergeQueue.Api.Controllers
                 userIdToKick = userIdToKick.Split('>')[0].Trim();
             }
             var user = request.ToUserToKick(userIdToKick);
-            var users = await QueueRepository.GetUsersForChannel(user.ChannelId);
-            var wasPersonRemoved = await QueueRepository.RemoveUser(user);
+            var users = await queueRepository.GetUsersForChannel(user.ChannelId);
+            var wasPersonRemoved = await queueRepository.RemoveUser(user);
 
             SlackSlashResponseDto? responseBody = null;
             if (!wasPersonRemoved)
@@ -176,7 +181,7 @@ namespace MergeQueue.Api.Controllers
             else
             {
                 var body = CreateKickQueueBody(user, users);
-                await PostToUrlWithBody(request.response_url, body);
+                await slackService.SendResponse(request.response_url, body);
             }
 
             return responseBody;

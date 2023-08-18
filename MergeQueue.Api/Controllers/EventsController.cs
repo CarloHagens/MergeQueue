@@ -4,15 +4,20 @@ using MergeQueue.Api.Types;
 using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Entities;
 using MergeQueue.Api.Builders;
+using MergeQueue.Api.Services;
 
 namespace MergeQueue.Api.Controllers
 {
     [Route("[controller]")]
     public class EventsController : BaseController
     {
-        public EventsController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient)
-            : base(configuration, queueRepository, httpClient)
+        private readonly IQueueRepository queueRepository;
+        private readonly ISlackService slackService;
+
+        public EventsController(IQueueRepository queueRepository, ISlackService slackService)
         {
+            this.queueRepository = queueRepository;
+            this.slackService = slackService;
         }
 
         [HttpPost]
@@ -46,60 +51,60 @@ namespace MergeQueue.Api.Controllers
         private async Task JoinQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var wasUserAdded = await QueueRepository.AddUser(user);
+            var wasUserAdded = await queueRepository.AddUser(user);
 
             if (!wasUserAdded)
             {
                 var alreadyInQueueBody = CreateAlreadyInQueueBody(user);
-                await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, alreadyInQueueBody);
+                await slackService.SendEphemeralMessage(alreadyInQueueBody);
             }
             else
             {
-                var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var queuedUsers = await queueRepository.GetUsersForChannel(user.ChannelId);
                 var joinQueueBody = CreateJoinQueueBody(user, queuedUsers);
                 var showQueueBody = CreateShowQueueBody(user, queuedUsers);
-                await PostToUrlWithBody(SlackApiEndpoints.SendMessage, joinQueueBody);
-                await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
+                await slackService.SendMessage(joinQueueBody);
+                await slackService.SendEphemeralMessage(showQueueBody);
             }
         }
 
         private async Task LeaveQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
-            var wasUserRemoved = await QueueRepository.RemoveUser(user);
+            var queuedUsers = await queueRepository.GetUsersForChannel(user.ChannelId);
+            var wasUserRemoved = await queueRepository.RemoveUser(user);
 
             if (!wasUserRemoved)
             {
                 var userNotInQueueBody = CreateUserNotInQueueBody(user);
-                await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, userNotInQueueBody);
+                await slackService.SendEphemeralMessage(userNotInQueueBody);
             }
             else
             {
                 var leaveQueueBody = CreateLeaveQueueBody(user, queuedUsers);
-                await PostToUrlWithBody(SlackApiEndpoints.SendMessage, leaveQueueBody);
+                await slackService.SendMessage(leaveQueueBody);
             }
         }
 
         private async Task JumpQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var wasUserAdded = await QueueRepository.AddUser(user, 1);
+            var wasUserAdded = await queueRepository.AddUser(user, 1);
 
             if (!wasUserAdded)
             {
                 var alreadyInQueueBody = CreateAlreadyInQueueAtThatPositioonBody(user);
-                await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, alreadyInQueueBody);
+                await slackService.SendEphemeralMessage(alreadyInQueueBody);
             }
             else
             {
 
-                var queuedUsers = await QueueRepository.GetUsersForChannel(user.ChannelId);
+                var queuedUsers = await queueRepository.GetUsersForChannel(user.ChannelId);
                 var jumpedTheQueueBody = CreateJumpQueueBody(user, queuedUsers);
-                await PostToUrlWithBody(SlackApiEndpoints.SendMessage, jumpedTheQueueBody);
+                await slackService.SendMessage(jumpedTheQueueBody);
 
                 var showQueueBody = CreateShowQueueBody(user, queuedUsers);
-                await PostToUrlWithBody(SlackApiEndpoints.SendEphemeralMessage, showQueueBody);
+                await slackService.SendEphemeralMessage(showQueueBody);
             }
         }
 

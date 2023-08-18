@@ -1,26 +1,26 @@
 using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Entities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Moq;
-using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
 using System.Collections.Generic;
 using MergeQueue.Api.Controllers;
 using MergeQueue.Api.Dtos;
+using MergeQueue.Api.Services;
 
 namespace MergeQueue.Tests
 {
     public class KickCommandTests
     {
         private SlashCommandsController slashCommandsController;
+        private Mock<ISlackService> mockSlackService;
 
         public KickCommandTests()
         {
-            var mockRepo = new Mock<IQueueRepository>();
-            mockRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).ReturnsAsync(
+            var mockQueueRepo = new Mock<IQueueRepository>();
+            mockSlackService = new Mock<ISlackService>();
+            mockQueueRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).ReturnsAsync(
                     new List<User> 
                     {
                         new User
@@ -30,13 +30,7 @@ namespace MergeQueue.Tests
                         }
                     }
             );
-            string projectPath = AppDomain.CurrentDomain.BaseDirectory.Split(new string[] { @"bin\" }, StringSplitOptions.None)[0];
-            IConfiguration config = new ConfigurationBuilder()
-               .SetBasePath(projectPath)
-               .AddJsonFile("appsettings.json")
-               .Build();
-            var httpClient = new HttpClient();
-            slashCommandsController = new SlashCommandsController(config, mockRepo.Object, httpClient);
+            slashCommandsController = new SlashCommandsController(mockQueueRepo.Object, mockSlackService.Object);
         }
 
         [Fact]

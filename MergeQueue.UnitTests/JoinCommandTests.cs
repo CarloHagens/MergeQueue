@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
 using System.Collections.Generic;
 using MergeQueue.Api.Controllers;
 using MergeQueue.Api.Dtos;
 using System.Linq;
+using MergeQueue.Api.Services;
 
 namespace MergeQueue.Tests
 {
@@ -18,11 +18,12 @@ namespace MergeQueue.Tests
     {
         private SlashCommandsController slashCommandsController;
         private Mock<IQueueRepository> mockRepo;
+        private Mock<ISlackService> mockSlackService;
 
         public JoinCommandTests()
         {
             mockRepo = new Mock<IQueueRepository>();
-            var httpClient = new Mock<HttpClient>();
+            mockSlackService = new Mock<ISlackService>();
             mockRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).ReturnsAsync(
                     new List<User>
                     {
@@ -38,7 +39,7 @@ namespace MergeQueue.Tests
                .SetBasePath(projectPath)
                .AddJsonFile("appsettings.json")
                .Build();
-            slashCommandsController = new SlashCommandsController(config, mockRepo.Object, httpClient.Object);
+            slashCommandsController = new SlashCommandsController(mockRepo.Object, mockSlackService.Object);
         }
 
         [Fact]
@@ -58,6 +59,11 @@ namespace MergeQueue.Tests
 
             // Assert
             Assert.Equal(":first_place_medal: <@test-user>", responseBody.Blocks.ToList()[0].Text.Text);
+
+            mockSlackService.Verify(mock => mock.SendResponse(null, It.Is<SlackSlashResponseDto>(p =>
+                p.Text == "<@> is now first in the queue!"
+                && p.ResponseType == "in_channel"
+            )), Times.Once());
         }
 
         [Fact]

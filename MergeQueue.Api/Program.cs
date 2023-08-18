@@ -1,6 +1,7 @@
 using MergeQueue.Api;
 using MergeQueue.Api.Filters;
 using MergeQueue.Api.Repositories;
+using MergeQueue.Api.Services;
 using MergeQueue.Api.Settings;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
@@ -12,7 +13,7 @@ using Serilog.Events;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
-var version = "v1.7.7";
+var version = "v1.7.8";
 
 // Add services to the container.
 
@@ -30,6 +31,15 @@ builder.Host.UseSerilog();
 BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
 
+builder.Services.AddHttpClient<ISlackService, SlackService>(client =>
+{
+    client.BaseAddress = new Uri("https://slack.com/api");
+    var settings = builder.Configuration.GetSection(nameof(SlackApiSettings)).Get<SlackApiSettings>();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.BotToken}");
+
+});
+
+
 builder.Services.AddSingleton<IMongoClient>(_ =>
 {
     var settings = builder.Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
@@ -38,7 +48,6 @@ builder.Services.AddSingleton<IMongoClient>(_ =>
 
 builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
 builder.Services.AddScoped<AuthenticationFilter>();
-builder.Services.AddScoped<HttpClient>();
 builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
 
 builder.Services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)

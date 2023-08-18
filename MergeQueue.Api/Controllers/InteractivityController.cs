@@ -2,18 +2,20 @@
 using Microsoft.AspNetCore.Mvc;
 using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Types;
-using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Builders;
 using System.Text.Json.Serialization;
+using MergeQueue.Api.Services;
 
 namespace MergeQueue.Api.Controllers
 {
     [Route("[controller]")]
     public class InteractivityController : BaseController
     {
-        public InteractivityController(IConfiguration configuration, IQueueRepository queueRepository, HttpClient httpClient)
-            : base(configuration, queueRepository, httpClient)
+        private readonly ISlackService slackService;
+
+        public InteractivityController(ISlackService slackService)
         {
+            this.slackService = slackService;
         }
 
         [HttpPost]
@@ -56,7 +58,7 @@ namespace MergeQueue.Api.Controllers
                 TriggerId = triggerId,
                 View = SelectChannelAndUserView(false)
             };
-            await PostToUrlWithBody(SlackApiEndpoints.OpenView, body);
+            await slackService.OpenView(body);
         }
 
         // TODO: Part of UI validation.
@@ -116,7 +118,7 @@ namespace MergeQueue.Api.Controllers
                 {InputTypes.SelectedUser, new SlackInputValueDto{ Value = selectedUser}}
             };
 
-            await PostToUrlWithBody(SlackApiEndpoints.UpdateWorkflowStep, body);
+            await slackService.UpdateWorkflowStep(body);
         }
     }
 }
