@@ -31,6 +31,11 @@ builder.Host.UseSerilog();
 BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
 
+builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
+builder.Services.AddScoped<AuthenticationFilter>();
+builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
+builder.Services.AddScoped<ISlackService, SlackService>();
+
 builder.Services.AddHttpClient<ISlackService, SlackService>(client =>
 {
     client.BaseAddress = new Uri("https://slack.com/api");
@@ -45,10 +50,6 @@ builder.Services.AddSingleton<IMongoClient>(_ =>
     var settings = builder.Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
     return new MongoClient(settings.ConnectionString);
 });
-
-builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
-builder.Services.AddScoped<AuthenticationFilter>();
-builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
 
 builder.Services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
                 .AddJsonOptions(options =>
