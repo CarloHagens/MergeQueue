@@ -13,7 +13,7 @@ using Serilog.Events;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
-var version = "v1.7.9";
+var version = "v1.8.0";
 
 // Add services to the container.
 
@@ -39,8 +39,10 @@ builder.Services.AddHttpClient<ISlackService, SlackService>(client =>
 
 });
 
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
 builder.Services.AddScoped<AuthenticationFilter>();
+builder.Services.AddScoped<IQueueLookup, QueueLookup>();
 builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
 
 

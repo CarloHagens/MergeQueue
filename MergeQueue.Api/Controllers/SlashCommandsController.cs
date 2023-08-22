@@ -12,12 +12,12 @@ namespace MergeQueue.Api.Controllers
     [Route("[controller]")]
     public class SlashCommandsController : BaseController
     {
-        private readonly IQueueRepository queueRepository;
+        private readonly IQueueLookup queueLookup;
         private readonly ISlackService slackService;
 
-        public SlashCommandsController(IQueueRepository queueRepository, ISlackService slackService)
+        public SlashCommandsController(IQueueLookup queueLookup, ISlackService slackService)
         {
-            this.queueRepository = queueRepository;
+            this.queueLookup = queueLookup;
             this.slackService = slackService;
         }
 
@@ -61,7 +61,7 @@ namespace MergeQueue.Api.Controllers
 
         private async Task<SlackSlashResponseDto> ShowQueue(SlackSlashRequestDto request)
         {
-            var queuedUsers = await queueRepository.GetUsersForChannel(request.channel_id);
+            var queuedUsers = await queueLookup.GetUsersForChannel(request.channel_id);
 
             SlackSlashResponseDto responseBody;
             if (queuedUsers.Any())
@@ -87,11 +87,11 @@ namespace MergeQueue.Api.Controllers
             if (request.text.Contains(' '))
             {
                 position = Convert.ToInt32(request.text.Split(' ')[1]);
-                wasUserAdded = await queueRepository.AddUser(user, position);
+                wasUserAdded = await queueLookup.AddUser(user, position);
             }
             else
             {
-                wasUserAdded = await queueRepository.AddUser(user);
+                wasUserAdded = await queueLookup.AddUser(user);
             }
 
             SlackSlashResponseDto responseBody;
@@ -103,7 +103,7 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var users = await queueRepository.GetUsersForChannel(user.ChannelId);
+                var users = await queueLookup.GetUsersForChannel(user.ChannelId);
                 var joinQueueBody = CreateJoinQueueBody(user, users, position);
                 await slackService.SendResponse(request.response_url, joinQueueBody);
                 responseBody = CreateShowQueueBody(users);
@@ -115,7 +115,7 @@ namespace MergeQueue.Api.Controllers
         private async Task<SlackSlashResponseDto> JumpQueue(SlackSlashRequestDto request)
         {
             var user = request.ToUser();
-            var wasUserAdded = await queueRepository.AddUser(user, 1);
+            var wasUserAdded = await queueLookup.AddUser(user, 1);
 
             SlackSlashResponseDto responseBody;
             if (!wasUserAdded)
@@ -126,7 +126,7 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var users = await queueRepository.GetUsersForChannel(user.ChannelId);
+                var users = await queueLookup.GetUsersForChannel(user.ChannelId);
                 var body = CreateJumpQueueBody(user, users);
                 await slackService.SendResponse(request.response_url, body);
                 responseBody = CreateShowQueueBody(users);
@@ -137,8 +137,8 @@ namespace MergeQueue.Api.Controllers
         private async Task<SlackSlashResponseDto?> LeaveQueue(SlackSlashRequestDto request)
         {
             var user = request.ToUser();
-            var users = await queueRepository.GetUsersForChannel(user.ChannelId);
-            var wasUserRemoved = await queueRepository.RemoveUser(user);
+            var users = await queueLookup.GetUsersForChannel(user.ChannelId);
+            var wasUserRemoved = await queueLookup.RemoveUser(user);
 
             SlackSlashResponseDto? responseBody = null;
             if (!wasUserRemoved)
@@ -168,8 +168,8 @@ namespace MergeQueue.Api.Controllers
                 userIdToKick = userIdToKick.Split('>')[0].Trim();
             }
             var user = request.ToUserToKick(userIdToKick);
-            var users = await queueRepository.GetUsersForChannel(user.ChannelId);
-            var wasPersonRemoved = await queueRepository.RemoveUser(user);
+            var users = await queueLookup.GetUsersForChannel(user.ChannelId);
+            var wasPersonRemoved = await queueLookup.RemoveUser(user);
 
             SlackSlashResponseDto? responseBody = null;
             if (!wasPersonRemoved)

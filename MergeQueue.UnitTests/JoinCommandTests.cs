@@ -17,12 +17,12 @@ namespace MergeQueue.Tests
     public class JoinCommandTests
     {
         private SlashCommandsController slashCommandsController;
-        private Mock<IQueueRepository> mockRepo;
+        private Mock<IQueueLookup> mockRepo;
         private Mock<ISlackService> mockSlackService;
 
         public JoinCommandTests()
         {
-            mockRepo = new Mock<IQueueRepository>();
+            mockRepo = new Mock<IQueueLookup>();
             mockSlackService = new Mock<ISlackService>();
             mockRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).ReturnsAsync(
                     new List<User>

@@ -18,7 +18,7 @@ namespace MergeQueue.Tests
 
         public KickCommandTests()
         {
-            var mockQueueRepo = new Mock<IQueueRepository>();
+            var mockQueueRepo = new Mock<IQueueLookup>();
             mockSlackService = new Mock<ISlackService>();
             mockQueueRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).ReturnsAsync(
                     new List<User> 

@@ -11,12 +11,12 @@ namespace MergeQueue.Api.Controllers
     [Route("[controller]")]
     public class EventsController : BaseController
     {
-        private readonly IQueueRepository queueRepository;
+        private readonly IQueueLookup queueLookup;
         private readonly ISlackService slackService;
 
-        public EventsController(IQueueRepository queueRepository, ISlackService slackService)
+        public EventsController(IQueueLookup queueLookup, ISlackService slackService)
         {
-            this.queueRepository = queueRepository;
+            this.queueLookup = queueLookup;
             this.slackService = slackService;
         }
 
@@ -51,7 +51,7 @@ namespace MergeQueue.Api.Controllers
         private async Task JoinQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var wasUserAdded = await queueRepository.AddUser(user);
+            var wasUserAdded = await queueLookup.AddUser(user);
 
             if (!wasUserAdded)
             {
@@ -60,7 +60,7 @@ namespace MergeQueue.Api.Controllers
             }
             else
             {
-                var queuedUsers = await queueRepository.GetUsersForChannel(user.ChannelId);
+                var queuedUsers = await queueLookup.GetUsersForChannel(user.ChannelId);
                 var joinQueueBody = CreateJoinQueueBody(user, queuedUsers);
                 var showQueueBody = CreateShowQueueBody(user, queuedUsers);
                 await slackService.SendMessage(joinQueueBody);
@@ -71,8 +71,8 @@ namespace MergeQueue.Api.Controllers
         private async Task LeaveQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var queuedUsers = await queueRepository.GetUsersForChannel(user.ChannelId);
-            var wasUserRemoved = await queueRepository.RemoveUser(user);
+            var queuedUsers = await queueLookup.GetUsersForChannel(user.ChannelId);
+            var wasUserRemoved = await queueLookup.RemoveUser(user);
 
             if (!wasUserRemoved)
             {
@@ -89,7 +89,7 @@ namespace MergeQueue.Api.Controllers
         private async Task JumpQueue(SlackEventSubscriptionRequestDto request)
         {
             var user = CreateUserFromEventInputs(request);
-            var wasUserAdded = await queueRepository.AddUser(user, 1);
+            var wasUserAdded = await queueLookup.AddUser(user, 1);
 
             if (!wasUserAdded)
             {
@@ -99,7 +99,7 @@ namespace MergeQueue.Api.Controllers
             else
             {
 
-                var queuedUsers = await queueRepository.GetUsersForChannel(user.ChannelId);
+                var queuedUsers = await queueLookup.GetUsersForChannel(user.ChannelId);
                 var jumpedTheQueueBody = CreateJumpQueueBody(user, queuedUsers);
                 await slackService.SendMessage(jumpedTheQueueBody);
 
