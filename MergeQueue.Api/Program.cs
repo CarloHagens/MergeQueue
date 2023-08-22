@@ -13,7 +13,7 @@ using Serilog.Events;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
-var version = "v1.7.8";
+var version = "v1.7.9";
 
 // Add services to the container.
 
@@ -33,6 +33,7 @@ BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String))
 
 builder.Services.AddHttpClient<ISlackService, SlackService>(client =>
 {
+    client.BaseAddress = new Uri("https://slack.com/api/");
     var settings = builder.Configuration.GetSection(nameof(SlackApiSettings)).Get<SlackApiSettings>();
     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.BotToken}");
 
@@ -41,7 +42,6 @@ builder.Services.AddHttpClient<ISlackService, SlackService>(client =>
 builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
 builder.Services.AddScoped<AuthenticationFilter>();
 builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
-builder.Services.AddScoped<ISlackService, SlackService>();
 
 
 builder.Services.AddSingleton<IMongoClient>(_ =>
@@ -75,28 +75,28 @@ app.Use(async (context, next) =>
     context.Request.EnableBuffering();
     await next();
 });
-app.UseSerilogRequestLogging(options =>
-{
-    options.EnrichDiagnosticContext = async (diagnosticsContext, httpContext) =>
-    {
-        var request = httpContext.Request;
+//app.UseSerilogRequestLogging(options =>
+//{
+//    options.EnrichDiagnosticContext = async (diagnosticsContext, httpContext) =>
+//    {
+//        var request = httpContext.Request;
 
-        request.Headers.TryGetValue("X-Slack-Request-Timestamp", out var slackRequestTimestamp);
-        request.Headers.TryGetValue("X-Slack-Signature", out var slackSignature);
+//        request.Headers.TryGetValue("X-Slack-Request-Timestamp", out var slackRequestTimestamp);
+//        request.Headers.TryGetValue("X-Slack-Signature", out var slackSignature);
 
-        string body;
-        using (var reader = new StreamReader(request.Body, leaveOpen: true))
-        {
-            body = await reader.ReadToEndAsync();
-            request.Body.Position = 0;
-        }
+//        string body;
+//        using (var reader = new StreamReader(request.Body, leaveOpen: true))
+//        {
+//            body = await reader.ReadToEndAsync();
+//            request.Body.Position = 0;
+//        }
 
-        diagnosticsContext.Set("SlackRequestTimestamp", slackRequestTimestamp);
-        diagnosticsContext.Set("SlackSignature", slackSignature);
-        diagnosticsContext.Set("RequestBody", body);
-    };
-    options.MessageTemplate = "Method: {RequestMethod} \r\n Path: {RequestPath} \r\n Timestamp: {SlackRequestTimestamp} \r\n Signature: {SlackSignature} \r\n Body: {RequestBody} \r\n Status Code: {StatusCode} \r\n Response Time: {Elapsed}";
-});
+//        diagnosticsContext.Set("SlackRequestTimestamp", slackRequestTimestamp);
+//        diagnosticsContext.Set("SlackSignature", slackSignature);
+//        diagnosticsContext.Set("RequestBody", body);
+//    };
+//    options.MessageTemplate = "Method: {RequestMethod} \r\n Path: {RequestPath} \r\n Timestamp: {SlackRequestTimestamp} \r\n Signature: {SlackSignature} \r\n Body: {RequestBody} \r\n Status Code: {StatusCode} \r\n Response Time: {Elapsed}";
+//});
 app.UseRouting();
 app.MapControllers();
 app.Run();

@@ -2,12 +2,11 @@
 {
     public static class SlackServiceEndpoints
     {
-        private static readonly string baseUrl = "https://slack.com/api/";
-        public static string OpenView => $"{baseUrl}views.open";
+        public static string OpenView => "views.open";
         // TODO: Part of UI validation.
         //public static string UpdateView => "views.update";
-        public static string UpdateWorkflowStep => $"{baseUrl}workflows.updateStep";
-        public static string SendMessage => $"{baseUrl}chat.postMessage";
-        public static string SendEphemeralMessage => $"{baseUrl}chat.postEphemeral";
+        public static string UpdateWorkflowStep => "workflows.updateStep";
+        public static string SendMessage => "chat.postMessage";
+        public static string SendEphemeralMessage => "chat.postEphemeral";
     }
 }
