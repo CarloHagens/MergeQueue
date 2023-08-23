@@ -1,6 +1,7 @@
 ﻿using MergeQueue.Api.Entities;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using System.Threading.Channels;
 
 namespace MergeQueue.Api.Repositories
 {
@@ -43,15 +44,21 @@ namespace MergeQueue.Api.Repositories
         public async Task<bool> AddUser(User userToAdd, int position)
         {
             var usersForChannel = await GetUsersForChannel(userToAdd.ChannelId);
+
+            if(position == 1 && (usersForChannel is null || usersForChannel.Count == 0))
+            {
+                await AddUser(userToAdd);
+                return true;
+            }
+
             var existingPosition = usersForChannel.FindIndex(
                 user => user.UserId == userToAdd.UserId 
                 && user.ChannelId == userToAdd.ChannelId);
-            if (existingPosition >= 0 && position - 1 == existingPosition 
+            if (existingPosition >= 0 && position - 1 == existingPosition
                 || position > usersForChannel.Count)
             {
                 return false;
             }
-
 
             foreach (var userInChannel in usersForChannel)
             {

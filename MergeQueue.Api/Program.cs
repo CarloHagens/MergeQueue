@@ -13,7 +13,7 @@ using Serilog.Events;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
-var version = "v1.8.0";
+var version = "v1.8.1";
 
 // Add services to the container.
 
