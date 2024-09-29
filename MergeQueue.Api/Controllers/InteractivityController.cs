@@ -1,10 +1,10 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
-using MergeQueue.Api.Dtos;
+﻿using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Types;
 using MergeQueue.Api.Builders;
-using System.Text.Json.Serialization;
 using MergeQueue.Api.Services;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MergeQueue.Api.Controllers
 {

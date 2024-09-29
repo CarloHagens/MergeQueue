@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MergeQueue.Api.Repositories;
+﻿using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Types;
 using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Entities;
 using MergeQueue.Api.Builders;
 using MergeQueue.Api.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MergeQueue.Api.Controllers
 {

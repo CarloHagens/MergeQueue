@@ -1,5 +1,5 @@
-﻿using System.Text.Json;
-using MergeQueue.Api.Dtos;
+﻿using MergeQueue.Api.Dtos;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace MergeQueue.Api.Services

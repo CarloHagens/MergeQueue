@@ -1,7 +1,6 @@
 ﻿using MergeQueue.Api.Entities;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using System.Threading.Channels;
 
 namespace MergeQueue.Api.Repositories
 {

@@ -1,16 +1,10 @@
-﻿using MergeQueue.Api.Repositories;
+﻿using MergeQueue.Api.Controllers;
+using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Entities;
+using MergeQueue.Api.Repositories;
+using MergeQueue.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Moq;
-using System;
-using System.Threading.Tasks;
-using Xunit;
-using System.Collections.Generic;
-using MergeQueue.Api.Controllers;
-using MergeQueue.Api.Dtos;
-using System.Linq;
-using MergeQueue.Api.Services;
 
 namespace MergeQueue.Tests
 {

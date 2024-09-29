@@ -10,7 +10,6 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using Serilog;
 using Serilog.Events;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
 var version = "v2.0.0";
@@ -40,7 +39,7 @@ builder.Services.AddHttpClient<ISlackService, SlackService>(client =>
 });
 
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped(typeof(ILogger), typeof(Logger<Program>));
+builder.Services.AddScoped(typeof(Microsoft.Extensions.Logging.ILogger), typeof(Logger<Program>));
 builder.Services.AddScoped<AuthenticationFilter>();
 builder.Services.AddScoped<IQueueLookup, QueueLookup>();
 builder.Services.AddScoped<IQueueRepository, MongoDbQueueRepository>();
