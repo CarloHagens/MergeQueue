@@ -4,6 +4,7 @@ using MergeQueue.Api.Controllers;
 using MergeQueue.Api.Dtos;
 using MergeQueue.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace MergeQueue.Tests
 {
@@ -16,6 +17,7 @@ namespace MergeQueue.Tests
         {
             var mockQueueRepo = new Mock<IQueueLookup>();
             mockSlackService = new Mock<ISlackService>();
+            var mockLogger = new Mock<ILogger>();
             mockQueueRepo.Setup(x => x.GetUsersForChannel(It.IsAny<string>())).ReturnsAsync(
                     new List<User> 
                     {
@@ -26,7 +28,7 @@ namespace MergeQueue.Tests
                         }
                     }
             );
-            slashCommandsController = new SlashCommandsController(mockQueueRepo.Object, mockSlackService.Object);
+            slashCommandsController = new SlashCommandsController(mockQueueRepo.Object, mockSlackService.Object, mockLogger.Object);
         }
 
         [Fact]

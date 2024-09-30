@@ -5,6 +5,7 @@ using MergeQueue.Api.Repositories;
 using MergeQueue.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace MergeQueue.Tests
 {
@@ -28,12 +29,14 @@ namespace MergeQueue.Tests
                         }
                     }
             );
+            var mockLogger = new Mock<ILogger>();
+
             string projectPath = AppDomain.CurrentDomain.BaseDirectory.Split(new string[] { @"bin\" }, StringSplitOptions.None)[0];
             IConfiguration config = new ConfigurationBuilder()
                .SetBasePath(projectPath)
                .AddJsonFile("appsettings.json")
                .Build();
-            slashCommandsController = new SlashCommandsController(mockRepo.Object, mockSlackService.Object);
+            slashCommandsController = new SlashCommandsController(mockRepo.Object, mockSlackService.Object, mockLogger.Object);
         }
 
         [Fact]

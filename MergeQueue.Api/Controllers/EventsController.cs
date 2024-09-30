@@ -5,7 +5,6 @@ using MergeQueue.Api.Entities;
 using MergeQueue.Api.Builders;
 using MergeQueue.Api.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json.Serialization;
 using System.Text.Json;
 
 namespace MergeQueue.Api.Controllers

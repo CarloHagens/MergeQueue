@@ -12,7 +12,7 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
-var version = "v2.0.2";
+var version = "v2.0.4";
 
 // Add services to the container.
 
