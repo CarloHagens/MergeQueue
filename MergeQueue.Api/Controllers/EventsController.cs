@@ -5,6 +5,8 @@ using MergeQueue.Api.Entities;
 using MergeQueue.Api.Builders;
 using MergeQueue.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace MergeQueue.Api.Controllers
 {
@@ -13,16 +15,20 @@ namespace MergeQueue.Api.Controllers
     {
         private readonly IQueueLookup queueLookup;
         private readonly ISlackService slackService;
+        private readonly ILogger logger;
 
-        public EventsController(IQueueLookup queueLookup, ISlackService slackService)
+        public EventsController(IQueueLookup queueLookup, ISlackService slackService, ILogger logger)
         {
             this.queueLookup = queueLookup;
             this.slackService = slackService;
+            this.logger = logger;
         }
 
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] SlackEventSubscriptionRequestDto request)
         {
+            logger.LogInformation(JsonSerializer.Serialize(request));
+
             if (request.Type == SlackEventRequestTypes.UrlVerification)
             {
                 return Ok(request.Challenge);
