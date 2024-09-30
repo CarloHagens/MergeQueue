@@ -2,6 +2,6 @@
 {
     public static class SlackEventTypes
     {
-        public static string WorkflowStepExecute = "workflow_step_execute";
+        public static string FunctionExecuted = "function_executed";
     }
 }

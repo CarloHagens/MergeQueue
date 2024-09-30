@@ -29,7 +29,7 @@ namespace MergeQueue.Api.Controllers
             }
 
             if (request.Type == SlackEventRequestTypes.EventCallback
-                && request.Event.Type == SlackEventTypes.WorkflowStepExecute)
+                && request.Event.Type == SlackEventTypes.FunctionExecuted)
             {
                 switch (request.Event.CallbackId)
                 {
