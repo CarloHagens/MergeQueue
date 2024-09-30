@@ -37,7 +37,7 @@ namespace MergeQueue.Api.Controllers
             if (request.Type == SlackEventRequestTypes.EventCallback
                 && request.Event.Type == SlackEventTypes.FunctionExecuted)
             {
-                switch (request.Event.CallbackId)
+                switch (request.Event.Function.CallbackId)
                 {
                     case Commands.Join:
                         await JoinQueue(request);
@@ -116,8 +116,8 @@ namespace MergeQueue.Api.Controllers
 
         private static User CreateUserFromEventInputs(SlackEventSubscriptionRequestDto request)
         {
-            var channelId = request.Event.WorkflowStep.Inputs[InputTypes.SelectedChannel].Value;
-            var userId = request.Event.WorkflowStep.Inputs[InputTypes.SelectedUser].Value;
+            var channelId = request.Event.Inputs.Channel;
+            var userId = request.Event.Inputs.User;
 
             return new User
             {
