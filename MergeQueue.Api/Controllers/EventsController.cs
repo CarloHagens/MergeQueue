@@ -39,13 +39,13 @@ namespace MergeQueue.Api.Controllers
                 switch (request.Event.Function.CallbackId)
                 {
                     case Commands.Join:
-                        await JoinQueue(request);
+                        Task.Run(() => JoinQueue(request));
                         break;
                     case Commands.Leave:
-                        await LeaveQueue(request);
+                        Task.Run(() => LeaveQueue(request));
                         break;
                     case Commands.Jump:
-                        await JumpQueue(request);
+                        Task.Run(() => JumpQueue(request));
                         break;
                 }
             }
@@ -71,6 +71,8 @@ namespace MergeQueue.Api.Controllers
                 await slackService.SendMessage(joinQueueBody);
                 await slackService.SendEphemeralMessage(showQueueBody);
             }
+
+            await FunctionCompleteSuccess(request);
         }
 
         private async Task LeaveQueue(SlackEventSubscriptionRequestDto request)
@@ -89,6 +91,8 @@ namespace MergeQueue.Api.Controllers
                 var leaveQueueBody = CreateLeaveQueueBody(user, queuedUsers);
                 await slackService.SendMessage(leaveQueueBody);
             }
+
+            await FunctionCompleteSuccess(request);
         }
 
         private async Task JumpQueue(SlackEventSubscriptionRequestDto request)
@@ -111,6 +115,8 @@ namespace MergeQueue.Api.Controllers
                 var showQueueBody = CreateShowQueueBody(user, queuedUsers);
                 await slackService.SendEphemeralMessage(showQueueBody);
             }
+
+            await FunctionCompleteSuccess(request);
         }
 
         private static User CreateUserFromEventInputs(SlackEventSubscriptionRequestDto request)
@@ -178,6 +184,17 @@ namespace MergeQueue.Api.Controllers
             return SlackSendMessageRequestBuilder
                 .CreateSendMessageRequestToChannel(user.ChannelId)
                 .WithText(responseText);
+        }
+
+        private async Task FunctionCompleteSuccess(SlackEventSubscriptionRequestDto request)
+        {
+            var functionCompleteDto = new SlackFunctionCompleteSuccessDto
+            {
+                FunctionExecutionId = request.Event.FunctionExecutionId,
+                Outputs = new()
+            };
+
+            await slackService.FunctionCompleteSuccess(functionCompleteDto);
         }
     }
 }
